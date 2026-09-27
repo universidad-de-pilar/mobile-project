@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { USER_REPOSITORY } from './domain/user.repository';
-import { PostgreUserRepository } from './infraestructure/posgre-user.repository';
+import { PostgreUserRepository } from './infraestructure/postgre-user.repository';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserOrmEntity } from './infraestructure/user.orm-entity';
 
 @Module({
-  imports: [],
+  imports: [TypeOrmModule.forFeature([UserOrmEntity])],
   controllers: [],
   providers: [
     {

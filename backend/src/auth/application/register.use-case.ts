@@ -24,7 +24,7 @@ export class RegisterUseCase {
         return await this.usersRepository.create(
             {
                 email: dto.email,
-                passwordHash: await this.passwordHasher.hash(dto.password),
+                password_hash: await this.passwordHasher.hash(dto.password),
                 first_name: dto.first_name,
                 last_name: dto.last_name
             }

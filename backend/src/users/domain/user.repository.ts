@@ -4,13 +4,13 @@ export const USER_REPOSITORY = Symbol('USER_REPOSITORY')
 
 export interface CreateUserData {
   email: string;
-  passwordHash: string;
+  password_hash: string;
   first_name: string;
   last_name: string;
 }
 
 export interface ResponseUserData {
-    user_id:string,
+    user_id:string;
     email: string;
     first_name: string;
     last_name: string;
@@ -23,5 +23,5 @@ export interface IUserRepository{
     delete(id:string):boolean;
     getAll():Promise<User[]>;
     getById(id:string):Promise<User>;
-    getByEmail(email:string):Promise<User>;
+    getByEmail(email:string):Promise<ResponseUserData | null>;
 }
