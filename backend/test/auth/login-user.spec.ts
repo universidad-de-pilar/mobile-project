@@ -1,15 +1,14 @@
 import { Test } from '@nestjs/testing';
-import { AuthController } from './.controller';
-import { AuthService } from './.service';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { LoginUseCase } from 'src/auth/application/login.use-case';
 
 
 
-describe('RegisterUserUseCase', () => {
-  let useCase: LoginUserUseCase;
+describe('LoginUserUseCase', () => {
+  let useCase: LoginUseCase;
 
   const usersRepository = {
-    findByEmail: jest.fn()
+    getByEmailWithPassword: jest.fn()
   };
 
   const passwordHasher = {
@@ -33,7 +32,7 @@ describe('RegisterUserUseCase', () => {
   })
 
   it('debe retornar un token cuando las credenciales son validas', async ()=>{
-    usersRepository.findByEmail.mockResolvedValue({
+    usersRepository.getByEmailWithPassword.mockResolvedValue({
         id: 'user-1',
         email: 'test@test.com',
         passwordHasher: 'hashed-password',
@@ -56,15 +55,15 @@ describe('RegisterUserUseCase', () => {
         password: 'Test!123#'
     })
 
-    expect(result.accessToken)
+    expect(result.access_token)
         .toBe('jwt-token');
   });
 
   it('debe fallar cuando el user o pass son incorrectos', async ()=> {
-      usersRepository.findByEmail.mockRejectedValue({
-        id: 'user-1',
+      usersRepository.getByEmailWithPassword.mockResolvedValue({
+        user_id: 'user-1',
         email: 'test@test.com',
-        passwordHasher: 'hashed-password',
+        password_hash: 'hashed-password',
       });
 
       passwordHasher.compare.mockResolvedValue(false);
@@ -78,7 +77,7 @@ describe('RegisterUserUseCase', () => {
   });
 
   it('debe arrojar unauthorized cuando el usuario no existe', async () => {
-    usersRepository.findByEmail.mockResolvedValue(null);
+    usersRepository.getByEmailWithPassword.mockResolvedValue(null);
 
     await expect(
         useCase.execute({

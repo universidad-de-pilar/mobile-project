@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { CreateUserData, IUserRepository, ResponseUserData } from "../domain/user.repository";
+import { CreateUserData, IUserRepository, ResponseUserData, ResponseUserDataWithPass } from "../domain/user.repository";
 import { User } from "../domain/user.entity";
 import { Repository } from "typeorm";
 import { UserOrmEntity } from "./user.orm-entity";
@@ -45,6 +45,23 @@ export class PostgreUserRepository implements IUserRepository{
         return {
             user_id: user.user_id,
             email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            created_at: user.created_at.toISOString()
+        }
+    }
+
+    async getByEmailWithPassword(email:string): Promise<ResponseUserDataWithPass | null>{
+        const user = await this.userDb.findOne({
+            where: {email}
+        })
+        if (!user) {
+            return null;
+        }
+        return {
+            user_id: user.user_id,
+            email: user.email,
+            password_hash: user.password_hash,
             first_name: user.first_name,
             last_name: user.last_name,
             created_at: user.created_at.toISOString()

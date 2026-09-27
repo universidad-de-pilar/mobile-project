@@ -17,6 +17,10 @@ export interface ResponseUserData {
     created_at:string
 }
 
+export interface ResponseUserDataWithPass extends ResponseUserData {
+    password_hash: string;
+}
+
 export interface IUserRepository{
     create(users:CreateUserData):Promise<ResponseUserData>;
     update(users:User):Promise<ResponseUserData>;
@@ -24,4 +28,5 @@ export interface IUserRepository{
     getAll():Promise<User[]>;
     getById(id:string):Promise<User>;
     getByEmail(email:string):Promise<ResponseUserData | null>;
+    getByEmailWithPassword(email:string):Promise<ResponseUserDataWithPass | null>;
 }
