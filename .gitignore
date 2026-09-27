@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+
+# Build and test output
+dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Expo / React Native generated files
+mobile/.expo/
+mobile/web-build/
+mobile/expo-env.d.ts
+mobile/.metro-health-check*
+mobile/.kotlin/
+mobile/ios/
+mobile/android/
+
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Logs and runtime data
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pids/
+*.pid
+*.seed
+*.pid.lock
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Temporary and cache files
+.temp/
+.tmp/
+.cache/
+*.orig.*
+
+# IDEs and editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
