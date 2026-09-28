@@ -21,7 +21,7 @@ export class LoginUseCase {
 
     async execute(dto: LoginUserDto){
         const userExists = await this.usersRepository.getByEmailWithPassword(dto.email);
-        if (userExists == null){
+        if (userExists == null || !userExists.is_active){
             throw new UnauthorizedException(`El email ${dto.email} no se encuentra registrado`);
         }
 

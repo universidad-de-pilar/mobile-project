@@ -31,19 +31,19 @@ describe('LoginUserUseCase', () => {
     )
   })
 
-  it('debe retornar un token cuando las credenciales son validas', async ()=>{
+  it('debe retornar un token cuando las credenciales son validas y el usuario esta activo', async ()=>{
     usersRepository.getByEmailWithPassword.mockResolvedValue({
         id: 'user-1',
         email: 'test@test.com',
-        passwordHasher: 'hashed-password',
-        isActive: true
+        password_hash: 'hashed-password',
+        is_active: true
     });
 
     passwordHasher.compare.mockResolvedValue({
         id: 'user-1',
         email: 'test@test.com',
-        passwordHasher: 'hashed-password',
-        isAsctive:true
+        password_hash: 'hashed-password',
+        is_active:true
     });
 
     passwordHasher.compare.mockResolvedValue(true);
@@ -52,7 +52,7 @@ describe('LoginUserUseCase', () => {
 
     const result = await useCase.execute({
         email: 'test@test.com',
-        password: 'Test!123#'
+        password: 'hashed-password'
     })
 
     expect(result.access_token)
@@ -74,6 +74,25 @@ describe('LoginUserUseCase', () => {
             password: 'wrong-password'
         })
       ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('debe fallar cuando el user esta inactivo', async ()=> {
+      usersRepository.getByEmailWithPassword.mockResolvedValue({
+        user_id: 'user-1',
+        email: 'test@test.com',
+        password_hash: 'hashed-password',
+        is_active: false
+      });
+
+      await expect(
+        useCase.execute({
+            email: 'test@test.com',
+            password: 'Test!123#'
+        })
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(passwordHasher.compare).not.toHaveBeenCalled();
+      expect(tokenService.sign).not.toHaveBeenCalled();
   });
 
   it('debe arrojar unauthorized cuando el usuario no existe', async () => {

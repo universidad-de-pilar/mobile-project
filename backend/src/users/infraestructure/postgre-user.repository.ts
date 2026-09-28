@@ -64,7 +64,8 @@ export class PostgreUserRepository implements IUserRepository{
             password_hash: user.password_hash,
             first_name: user.first_name,
             last_name: user.last_name,
-            created_at: user.created_at.toISOString()
+            created_at: user.created_at.toISOString(),
+            is_active: user.is_active
         }
     }
     

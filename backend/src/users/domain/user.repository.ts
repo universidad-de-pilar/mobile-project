@@ -14,11 +14,12 @@ export interface ResponseUserData {
     email: string;
     first_name: string;
     last_name: string;
-    created_at:string
+    created_at:string;
 }
 
 export interface ResponseUserDataWithPass extends ResponseUserData {
     password_hash: string;
+    is_active:boolean;
 }
 
 export interface IUserRepository{
