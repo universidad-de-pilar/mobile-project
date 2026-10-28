@@ -1,27 +1,28 @@
 
 import { Platform } from 'react-native';
 
+
 export const EduKitColors = {
-  primary: '#2457C5',
-  primaryDark: '#183153',
-  primarySoft: '#E5EDFF',
-  primarySubtle: '#EEF3FF',
+  primary: '#258A82',
+  primaryDark: '#183D3B',
+  primarySoft: '#E0F4EF',
+  primarySubtle: '#EFF9F6',
 
-  background: '#F4F7FB',
+  background: '#F5FAF8',
   surface: '#FFFFFF',
-  border: '#E1E8F0',
+  border: '#C9E8E1',
 
-  text: '#183153',
-  textSecondary: '#5B687A',
-  textMuted: '#6B7788',
+  text: '#183D3B',
+  textSecondary: '#536A68',
+  textMuted: '#708582',
 
-  success: '#218653',
+  success: '#28745F',
   warning: '#A86608',
   error: '#B42318',
-  info: '#2457C5',
+  info: '#258A82',
 
-  disabled: '#D8DEE8',
-  disabledText: '#6B7788',
+  disabled: '#D8E6E2',
+  disabledText: '#708582',
 } as const;
 
 export const EduKitSpacing = {

@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ScrollView,
   StyleSheet,
@@ -23,6 +24,7 @@ export default function ExploreScreen() {
   const [name, setName] = useState('');
   const [showError, setShowError] = useState(false);
   const [feedback, setFeedback] = useState<'loading' | 'empty' | 'error'>('empty');
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -67,7 +69,7 @@ export default function ExploreScreen() {
           <Text style={styles.body}>
             Una tarjeta reutilizable para presentar información y acciones.
           </Text>
-          <Button title="Ver productos" onPress={() => setFeedback('empty')} fullWidth />
+          <Button title="Ver productos" onPress={() => router.push('/') } fullWidth />
         </Card>
 
         <Text style={styles.sectionTitle}>Comentario</Text>
