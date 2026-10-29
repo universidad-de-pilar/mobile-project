@@ -588,6 +588,11 @@ Escenario: Cantidad máxima
   Cuando intento agregar una más
   Entonces el sistema no permite superar 50
 
+Escenario: Cantidad limitada por stock
+  Dado un producto con stock disponible menor que 50
+  Cuando intento agregar m?s unidades que el stock
+  Entonces el carrito no permite superar las unidades disponibles
+
 Escenario: Recarga de página
   Dado un carrito con productos
   Cuando recargo la página
