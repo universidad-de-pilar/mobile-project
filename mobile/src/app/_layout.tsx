@@ -13,10 +13,11 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="explore" options={{ headerShown: false }} />
-        <Stack.Screen name="products/[id]" options={{ title: 'Detalle del producto' }} />
+     <Stack>
+         <Stack.Screen name="index" options={{ headerShown: false }} />
+         <Stack.Screen name="[storeSlug]" options={{ headerShown: false }} />
+         <Stack.Screen name="explore" options={{ headerShown: false }} />
+         <Stack.Screen name="products/[id]" options={{ title: 'Detalle del producto' }} />
       </Stack>
     </ThemeProvider>
   );
