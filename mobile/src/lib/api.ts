@@ -91,9 +91,15 @@ async function send<T>(path: string, init: RequestInit | undefined, authenticate
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
-  } catch {
+    } catch (e) {
+    console.error('API_CONNECTION_ERROR:', {
+      url: `${API_URL}${path}`,
+      platform: Platform.OS,
+      tenant,
+      error: String(e),
+    });
     throw new ApiError(0, null, 'No se pudo conectar con el servidor.');
-  }
+    }
 
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {

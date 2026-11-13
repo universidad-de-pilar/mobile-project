@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Mostrador",
-    "slug": "mostrador",
+    "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,7 +11,8 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "adaptiveIcon": {
+        "usesCleartextTraffic": true,
+        "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
@@ -39,6 +40,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "be06bb2c-a26f-44d7-b54e-68de604c0d34"
+      }
     }
   }
 }

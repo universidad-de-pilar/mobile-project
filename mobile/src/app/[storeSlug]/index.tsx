@@ -59,15 +59,15 @@ export default function CatalogScreen() {
     let active = true;
     getPublicCatalog(storeSlug)
       .then((catalog) => active && setResult({ key, catalog }))
-      .catch(
-        (e) =>
-          active &&
-          setResult({
-            key,
-            notFound: e instanceof ApiError && (e.code === 'STORE_NOT_FOUND' || e.status === 404),
-            suspended: isTenantSuspended(e),
-          }),
-      );
+        .catch((e) => {
+         console.error('CATALOG_LOAD_ERROR:', e);
+         if (!active) return;
+        setResult({
+          key,
+          notFound: e instanceof ApiError && (e.code === 'STORE_NOT_FOUND' || e.status === 404),
+          suspended: isTenantSuspended(e),
+        });
+      });
     return () => {
       active = false;
     };
