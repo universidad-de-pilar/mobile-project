@@ -1057,6 +1057,17 @@ Manual (backend corriendo, archivo `backend/http/13-employees/employees.http`):
 - Empleado: `GET /employees` y `POST /employees` responden 403.
 - Dueño: `PUT /employees/:id/stores` reemplaza los locales; un local de otro tenant da 400 `INVALID_STORES`.
 
+Mobile, pestaña Equipo (`mobile/src/lib/employee-rules.test.ts`, automatizado): `validateEmployee` exige email válido, nombres de al menos 3 caracteres, contraseña de 8 o más con mayúscula, minúscula, número y especial, y al menos un local, y devuelve el cuerpo recortado; `toggleStore` agrega y quita sin mutar; `storesSummary` lista los nombres o "Sin locales"; `employeeErrorMessage` mapea `EMAIL_TAKEN`, `INVALID_STORES`, `CANNOT_DEACTIVATE_SELF`, `EMPLOYEE_NOT_EDITABLE`, `EMPLOYEE_NOT_FOUND`, 403 y sin conexión.
+
+Mobile, pestaña Equipo (manual, app web):
+- El dueño ve la pestaña Equipo; un empleado (sin `employees:read`) no la ve; el Root en `admin.<base>` solo ve Comercios.
+- El listado muestra al dueño (sin edición, interruptor deshabilitado) y a cada empleado con email, locales e interruptor; el dueño no puede desactivarse a sí mismo.
+- Crear con email, nombre, apellido, contraseña y un local: aparece en la lista y puede iniciar sesión. Con email repetido muestra "Ese email ya está registrado."; sin local, con contraseña débil o nombre corto, muestra el error del campo sin llamar a la API.
+- Desactivar con el interruptor bloquea al empleado; reactivar le devuelve el acceso.
+- Tocar un empleado abre la edición (nombre, apellido, locales); guardar reasigna los locales y se refleja en el listado.
+- Un usuario con solo `employees:read` ve el listado sin formulario ni edición.
+- Pantalla pequeña (390 px): sin scroll horizontal, los locales se acomodan en varias líneas y los botones ocupan todo el ancho. Pendiente: Android y probar contra una base real.
+
 Pending: supertest con base para los casos anteriores (el repositorio ejecuta SQL y no se probó contra una base en esta etapa); no funcionales de volumen (listado con muchos empleados) y bloqueo del token del empleado desactivado bajo carga (k6).
 
 ### Comercios suspendidos (R2, RF-035)

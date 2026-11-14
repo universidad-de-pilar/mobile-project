@@ -12,6 +12,7 @@ const ROOT_TAB: TabItem = { key: 'comercios', label: 'Comercios', icon: 'busines
 const TABS: (TabItem & { permission?: string })[] = [
   { key: 'catalogo', label: 'Catálogo', icon: 'grid-outline' },
   { key: 'pantallas', label: 'Pantallas', icon: 'tv-outline', permission: 'screens:read' },
+  { key: 'equipo', label: 'Equipo', icon: 'people-outline', permission: 'employees:read' },
   { key: 'ordenes', label: 'Órdenes', icon: 'receipt-outline' },
   { key: 'ajustes', label: 'Ajustes', icon: 'settings-outline' },
   ROOT_TAB,

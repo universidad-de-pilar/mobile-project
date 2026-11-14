@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import type { OrderStatus } from '@/components/ui/mostrador/badge';
 import { authRequest, resolveImageUrl } from '@/lib/api';
 import type { ScheduleInput, SlotInput } from '@/lib/schedule-rules';
+import type { NewEmployeeInput } from '@/lib/employee-rules';
 import type { NewTenantInput } from '@/lib/tenant-rules';
 
 export type Category = { category_id: string; name: string; sort_order: number };
@@ -207,3 +208,23 @@ export const listScreens = (storeId: string) => authRequest<Screen[]>(`/screens?
 
 export const createScreen = (storeId: string, name: string) =>
   authRequest<Screen>('/screens', json('POST', { store_id: storeId, name }));
+
+export type Employee = {
+  user_id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  is_active: boolean;
+  store_ids: string[];
+};
+
+export const listEmployees = () => authRequest<Employee[]>('/employees');
+
+export const createEmployee = (input: NewEmployeeInput) => authRequest<Employee>('/employees', json('POST', input));
+
+export const updateEmployee = (id: string, input: { first_name?: string; last_name?: string; is_active?: boolean }) =>
+  authRequest<Employee>(`/employees/${id}`, json('PATCH', input));
+
+export const setEmployeeStores = (id: string, storeIds: string[]) =>
+  authRequest<Employee>(`/employees/${id}/stores`, json('PUT', { store_ids: storeIds }));

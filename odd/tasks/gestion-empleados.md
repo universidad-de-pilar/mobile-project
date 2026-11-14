@@ -29,7 +29,7 @@ There is no user management today: `backend/src/users` has only domain + infrast
 - [x] T1 DB: `database/scripts/002_employees_permissions.sql` with `employees:*` permissions and owner grant (root too, following the existing "root has every permission" convention so `/me` reflects it). Route: inline (one mechanical file).
 - [x] T2 Backend: tenant-scoped employee repository (list members with stores, transactional create, update names, set membership active, replace stores validated against tenant) + use cases with TDD. Route: delegated (writer trigger, 2+ non-trivial files).
 - [x] T3 Backend: `EmployeesController`, DTOs, module wiring, `route-permissions.spec`, `docs/api.md`, `docs/testing.md`. Route: delegated (writer trigger).
-- [ ] T4 Mobile: "Equipo" tab gated by `employees:read`, list/create/detail screens, `admin-api` functions, `employee-rules` with tests, `docs/testing.md`. Route: delegated (writer trigger).
+- [x] T4 Mobile: "Equipo" tab gated by `employees:read`, list/create/detail screens, `admin-api` functions, `employee-rules` with tests, `docs/testing.md`. Route: delegated (writer trigger).
 
 ## Acceptance criteria
 - Owner can create an employee with a store; the employee logs in and only sees permitted tabs.
@@ -45,5 +45,7 @@ There is no user management today: `backend/src/users` has only domain + infrast
 
 - T3 done (commit see git log: `feat(empleados): endpoints /employees`): `EmployeesController` (GET/POST /employees, PATCH /employees/:id, PUT /employees/:id/stores), DTOs (`CreateEmployeeDto extends RegisterUserDto`), `EmployeesModule` registered in `AppModule`; `PASSWORD_HASHER` exported from `AuthModule` and `AuthModule` imported by `EmployeesModule` (no cycle). Tenant middleware already covers `*`; admin host still only auth|me|tenants. `route-permissions.spec` extended (employee reaches no /employees route). Verification: `npx tsc --noEmit` clean; `npm test` 43 suites / 391 tests pass; `npm run build` ok. Docs: `docs/api.md` 4.1, `docs/testing.md`, `backend/http/13-employees/employees.http`; Postman collection skipped (large generated file). Server/DB not run.
 
+- T4 done (commit: `feat(empleados): pestaña Equipo en el backoffice`): `mobile/src/app/admin/(tabs)/equipo.tsx` (list with toggle, inline create/edit form with store chips; one screen instead of a stack), `admin-api` employee functions, `employee-rules.ts` (+ test), tab `equipo` gated by `employees:read` in `_layout.tsx` (platform root already sees only `comercios`), `docs/testing.md`. RED: `npx jest src/lib/employee-rules` failed (module not found, 0 tests); GREEN: 20/20. Verification in `mobile/`: `npx tsc --noEmit` 0; `npm test` 20 suites / 230 tests pass; `npx expo lint` no warnings. App/server not run.
+
 ## Next step
-T4 (mobile).
+Manual test against a DB + PR delivery.
