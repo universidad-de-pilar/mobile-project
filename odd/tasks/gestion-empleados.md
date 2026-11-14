@@ -26,8 +26,8 @@ There is no user management today: `backend/src/users` has only domain + infrast
 - Delivery: ~900 authored lines forecast; chained PRs (T1+T2, T3, T4). Chain strategy to be asked before the first PR.
 
 ## Tasks
-- [ ] T1 DB: `database/scripts/002_employees_permissions.sql` with `employees:*` permissions and owner grant. Route: inline (one mechanical file).
-- [ ] T2 Backend: tenant-scoped employee repository (list members with stores, transactional create, update names, set membership active, replace stores validated against tenant) + use cases with TDD. Route: delegated (writer trigger, 2+ non-trivial files).
+- [x] T1 DB: `database/scripts/002_employees_permissions.sql` with `employees:*` permissions and owner grant (root too, following the existing "root has every permission" convention so `/me` reflects it). Route: inline (one mechanical file).
+- [x] T2 Backend: tenant-scoped employee repository (list members with stores, transactional create, update names, set membership active, replace stores validated against tenant) + use cases with TDD. Route: delegated (writer trigger, 2+ non-trivial files).
 - [ ] T3 Backend: `EmployeesController`, DTOs, module wiring, `route-permissions.spec`, `docs/api.md`, `docs/testing.md`. Route: delegated (writer trigger).
 - [ ] T4 Mobile: "Equipo" tab gated by `employees:read`, list/create/detail screens, `admin-api` functions, `employee-rules` with tests, `docs/testing.md`. Route: delegated (writer trigger).
 
@@ -40,6 +40,8 @@ There is no user management today: `backend/src/users` has only domain + infrast
 
 ## Progress
 - Feature doc created.
+- T1 done (commit cf47c54): `npm run db:apply` applied 002 on local DB; re-ran the file directly (idempotent, no error); grants verified: owner and root have `employees:create/read/update`. No tests (SQL seed).
+- T2 done (commit c170ae1): new module `backend/src/employees` (domain/application/infraestructure; wiring left to T3). RED: `npx jest test/employees` failed (suite could not resolve `src/employees/*`, 0 tests run); GREEN: 13/13. `npx tsc --noEmit` clean; `npm test` 43 suites / 389 tests pass. Repo SQL not run against a DB (only the remote Neon DB is configured; not probed). Design: separate module, reuses `USER_REPOSITORY.getByEmail` and `PASSWORD_HASHER`; error codes `EMAIL_TAKEN` 409, `INVALID_STORES` 400, `EMPLOYEE_NOT_FOUND` 404, `EMPLOYEE_NOT_EDITABLE` 403 (non-employee roles), `CANNOT_DEACTIVATE_SELF` 409. Store replacement is a soft delete (`users_stores.is_active`). T3 must make `PASSWORD_HASHER` available to the employees module (currently provided only in AuthModule).
 
 ## Next step
-T1.
+T3.
