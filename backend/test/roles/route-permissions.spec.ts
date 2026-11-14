@@ -7,6 +7,7 @@ import { ScreensController } from 'src/screens/api/screens.controller';
 import { StoresController } from 'src/stores/api/stores.controller';
 import { OrdersController } from 'src/orders/api/orders.controller';
 import { TenantsController } from 'src/tenants/api/tenants.controller';
+import { EmployeesController } from 'src/employees/api/employees.controller';
 
 // Mirrors the employee grants in database/scripts/001_schema.sql.
 const EMPLOYEE = ['stores:read', 'categories:read', 'products:read', 'orders:read', 'orders:update'];
@@ -18,7 +19,7 @@ const requiredBy = (controller: any) =>
 
 describe('Permisos requeridos por ruta', () => {
   it.each([
-    ProductsController, CategoriesController, ContentController, PlaylistsController, ScreensController, StoresController, OrdersController, TenantsController,
+    ProductsController, CategoriesController, ContentController, PlaylistsController, ScreensController, StoresController, OrdersController, TenantsController, EmployeesController,
   ])('%p exige permisos en todas sus rutas privadas', (controller) => {
     for (const [name, codes] of requiredBy(controller)) {
       expect({ name, codes: codes?.length }).toEqual({ name, codes: expect.any(Number) });
@@ -53,6 +54,13 @@ describe('Permisos requeridos por ruta', () => {
   it('solo root administra tenants: ni owner ni employee tienen tenants:*', () => {
     for (const [, codes] of requiredBy(TenantsController)) {
       expect(codes!.every((c) => c.startsWith('tenants:'))).toBe(true);
+      expect(codes!.some((c) => EMPLOYEE.includes(c))).toBe(false);
+    }
+  });
+
+  it('el empleado no alcanza ninguna ruta de /employees (solo employees:*, que no tiene)', () => {
+    for (const [, codes] of requiredBy(EmployeesController)) {
+      expect(codes!.every((c) => c.startsWith('employees:'))).toBe(true);
       expect(codes!.some((c) => EMPLOYEE.includes(c))).toBe(false);
     }
   });

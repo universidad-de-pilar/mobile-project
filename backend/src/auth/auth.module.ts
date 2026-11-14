@@ -69,6 +69,6 @@ import { GetMeUseCase } from './application/get-me.use-case';
       useClass: PermissionsGuard
     }
   ],
-  exports: []
+  exports: [PASSWORD_HASHER]
 })
 export class AuthModule {}

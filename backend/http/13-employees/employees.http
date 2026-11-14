@@ -1,0 +1,90 @@
+@baseUrl = http://localhost:3000
+@tenant = local3
+@email = dueno@local3.test
+@password = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+@storeId = {{stores.response.body.$[0].store_id}}
+@employeeId = {{create.response.body.$.user_id}}
+
+### Login del dueno (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Local del tenant (guarda store_id)
+# @name stores
+GET {{baseUrl}}/stores
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Listar empleados
+GET {{baseUrl}}/employees
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Crear empleado (guarda user_id)
+# @name create
+POST {{baseUrl}}/employees
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "email": "ana@local3.test", "first_name": "Ana", "last_name": "Perez", "password": "Ana-dev-2026!", "store_ids": ["{{storeId}}"] }
+
+### Email repetido (409 EMAIL_TAKEN)
+POST {{baseUrl}}/employees
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "email": "ana@local3.test", "first_name": "Ana", "last_name": "Perez", "password": "Ana-dev-2026!", "store_ids": ["{{storeId}}"] }
+
+### Sin locales (400 INVALID_STORES)
+POST {{baseUrl}}/employees
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "email": "luis@local3.test", "first_name": "Luis", "last_name": "Gomez", "password": "Luis-dev-2026!", "store_ids": [] }
+
+### Editar nombre
+PATCH {{baseUrl}}/employees/{{employeeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "first_name": "Anita" }
+
+### Desactivar (el token del empleado queda bloqueado)
+PATCH {{baseUrl}}/employees/{{employeeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "is_active": false }
+
+### Reactivar
+PATCH {{baseUrl}}/employees/{{employeeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "is_active": true }
+
+### Reemplazar locales
+PUT {{baseUrl}}/employees/{{employeeId}}/stores
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "store_ids": ["{{storeId}}"] }
+
+### Empleado inexistente (404 EMPLOYEE_NOT_FOUND)
+PATCH {{baseUrl}}/employees/00000000-0000-4000-8000-000000000000
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "is_active": false }

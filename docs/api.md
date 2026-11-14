@@ -249,6 +249,44 @@ Esquema `Store`:
 - `slug` e `is_active` no se modifican en R1 (el slug forma parte de los QR ya impresos; la baja de locales es R2).
 - Respuesta 200: `Store` actualizado. Errores: 400 número inválido (`message` indica el formato internacional); 404 `STORE_NOT_FOUND`.
 
+## 4.1 Backoffice: empleados (`/employees`)
+
+RF-008, HU-05. Solo el dueño (y `root`) gestiona empleados; el rol `employee` no tiene `employees:*` y recibe 403 en todas las rutas. Esquema `Employee`:
+
+```json
+{ "user_id": "5b1c…", "email": "ana@local1.test", "first_name": "Ana", "last_name": "Perez",
+  "role": "employee", "is_active": true, "store_ids": ["9d3e…"] }
+```
+
+`is_active` es la membresía del usuario en este tenant (`users_tenants.is_active`): al desactivarlo, `MembershipGuard` bloquea sus solicitudes; reactivarlo restaura el acceso. `store_ids` lista solo locales activos del tenant. El listado incluye también al dueño (`role: "owner"`), que no se puede editar.
+
+### `GET /employees`
+- Permiso: `employees:read`. Respuesta 200: arreglo de `Employee` del tenant, ordenado por nombre.
+
+### `POST /employees`
+- Permiso: `employees:create`. El dueño define la contraseña inicial (mismas reglas que `POST /auth/register`) y el rol queda `employee`.
+
+```json
+{ "email": "ana@local1.test", "first_name": "Ana", "last_name": "Perez", "password": "Ana-dev-2026!", "store_ids": ["9d3e…"] }
+```
+
+- `store_ids`: uuids de locales activos del tenant, al menos uno.
+- Respuesta 201: `Employee`. Errores: 400 validación; 400 `INVALID_STORES` (vacío, de otro tenant o inactivo); 409 `EMAIL_TAKEN` (el email ya existe: un usuario pertenece a un solo tenant).
+
+### `PATCH /employees/:id`
+- Permiso: `employees:update`. Campos opcionales: `first_name`, `last_name` (texto de al menos 3 caracteres, se recortan) e `is_active` (booleano, no `null`).
+- Respuesta 200: `Employee` actualizado. Errores: 400 uuid o cuerpo inválido; 403 `EMPLOYEE_NOT_EDITABLE` (el usuario no es `employee`); 404 `EMPLOYEE_NOT_FOUND` (no es del tenant); 409 `CANNOT_DEACTIVATE_SELF`.
+
+### `PUT /employees/:id/stores`
+- Permiso: `employees:update`. Reemplaza los locales del empleado.
+
+```json
+{ "store_ids": ["9d3e…"] }
+```
+
+- Respuesta 200: `Employee` con los nuevos `store_ids`. Errores: 400 `INVALID_STORES`; 403 `EMPLOYEE_NOT_EDITABLE`; 404 `EMPLOYEE_NOT_FOUND`.
+- En R2 el filtro de órdenes por `users_stores` aún no aplica (sección 12).
+
 ## 5. Backoffice: categorías (`/categories`)
 
 Esquema `Category`:
@@ -770,6 +808,9 @@ Estilo de código existente: `recurso:acción` (por ejemplo `products:create`, c
 | `screens:update` | `PATCH /screens/:id`, `PUT /screens/:id/schedule` (asignar playlists a la pantalla) | sí | no |
 | `orders:read` | `GET /orders`, `GET /orders/:id` | sí | sí |
 | `orders:update` | `PATCH /orders/:id/status` | sí | sí |
+| `employees:read` | `GET /employees` | sí | no |
+| `employees:create` | `POST /employees` | sí | no |
+| `employees:update` | `PATCH /employees/:id`, `PUT /employees/:id/stores` | sí | no |
 | `tenants:read` | `GET /tenants` | no | no |
 | `tenants:create` | `POST /tenants` | no | no |
 | `tenants:update` | `PATCH /tenants/:id` | no | no |
@@ -816,7 +857,8 @@ Trazabilidad RF a endpoint o tabla (los RF de R2 están en la sección 14):
 Solo nombres; se definirán en R2:
 
 - Catálogo desde foto con IA (RF-015 a RF-017): `POST /catalog/photo-imports`, `GET /catalog/photo-imports/:id`, `POST /catalog/photo-imports/:id/confirm`.
-- Varios locales y empleados (RF-003 ampliado, RF-008): `POST /stores`, `PATCH /stores/:id` (alta y baja), `GET /employees`, `POST /employees`, `PATCH /employees/:id`, `PUT /employees/:id/stores`.
+- Varios locales (RF-003 ampliado): `POST /stores`, `PATCH /stores/:id` (alta y baja).
+- ~~Empleados (RF-008)~~: **hecho en R2** (sección 4.1: `/employees`).
 - Regeneración de token: `POST /screens/:id/regenerate-token`.
 - ~~Tenant suspendido (RF-035)~~: **hecho en R2** (sección 3.1: `POST /tenants/:id/suspend`, `POST /tenants/:id/reactivate`, 503 `TENANT_SUSPENDED`, panel del root en la app).
 - Métricas: `GET /metrics/orders`, `GET /metrics/screens`.

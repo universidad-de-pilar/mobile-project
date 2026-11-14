@@ -11,6 +11,7 @@ import { OrdersModule } from './orders/orders.module';
 import { ScreensModule } from './screens/screens.module';
 import { StoresModule } from './stores/stores.module';
 import { ContentModule } from './content/content.module';
+import { EmployeesModule } from './employees/employees.module';
 import { TenantMiddleware } from './tenants/api/tenant.middleware';
 import { logger } from './logging/app-logger';
 import { TypeOrmLogger } from './logging/typeorm-logger';
@@ -52,6 +53,7 @@ import { dbSsl } from './db/db-ssl';
     ScreensModule,
     StoresModule,
     ContentModule,
+    EmployeesModule,
   ],
   controllers: [],
   providers: [],
