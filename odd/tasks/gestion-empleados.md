@@ -47,5 +47,7 @@ There is no user management today: `backend/src/users` has only domain + infrast
 
 - T4 done (commit 8376878): `mobile/src/app/admin/(tabs)/equipo.tsx` (list with toggle, inline create/edit form with store chips; one screen instead of a stack), `admin-api` employee functions, `employee-rules.ts` (+ test), tab `equipo` gated by `employees:read` in `_layout.tsx` (platform root already sees only `comercios`), `docs/testing.md`. RED: `npx jest src/lib/employee-rules` failed (module not found, 0 tests); GREEN: 20/20. Verification in `mobile/`: `npx tsc --noEmit` 0; `npm test` 20 suites / 230 tests pass; `npx expo lint` no warnings. App/server not run.
 
+- Manual API test on Neon (2026-11-14, user-authorized): backend local on :3010, tenant `local1` owner. 12/12 cases as expected (201 create, 409 EMAIL_TAKEN, 400 INVALID_STORES, 400 weak password, employee 403 on /employees, 409 CANNOT_DEACTIVATE_SELF, deactivated employee 403 NOT_A_MEMBER then restored, PUT stores 200/400, 404 EMPLOYEE_NOT_FOUND). Test employee deleted (1 row each in users_stores/users_tenants/users_roles/users). Not covered: EMPLOYEE_NOT_EDITABLE against another owner; mobile tab not run in a browser.
+
 ## Next step
 Manual test against a DB + PR delivery.
