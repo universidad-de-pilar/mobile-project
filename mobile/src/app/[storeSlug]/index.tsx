@@ -50,6 +50,7 @@ export default function CatalogScreen() {
         description: selected.description,
         price: selected.price,
         imageUrl: selected.image_url,
+        glutenFree: selected.gluten_free,
       },
     [selected],
   );
@@ -153,6 +154,7 @@ export default function CatalogScreen() {
                 description={item.description ?? undefined}
                 price={formatPrice(item.price)}
                 imageUrl={item.image_url}
+                glutenFree={item.gluten_free}
                 onAdd={() => add(item)}
                 onPress={() => setSelected(item)}
               />

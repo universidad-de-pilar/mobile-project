@@ -16,6 +16,8 @@ export type Product = {
   price: string;
   image_url: string | null;
   is_available: boolean;
+  sku: string | null;
+  gluten_free: boolean;
 };
 
 export type ProductInput = {
@@ -24,6 +26,8 @@ export type ProductInput = {
   description?: string | null;
   price: string;
   is_available: boolean;
+  sku: string;
+  gluten_free: boolean;
 };
 
 export type PickedImage = {

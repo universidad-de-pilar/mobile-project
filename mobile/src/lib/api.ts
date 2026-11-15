@@ -8,6 +8,7 @@ export type PublicProduct = {
   description: string | null;
   price: string;
   image_url: string | null;
+  gluten_free: boolean;
 };
 
 export type CatalogCategory = {
