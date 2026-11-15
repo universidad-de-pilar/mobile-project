@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { MenuQr } from '@/components/admin/menu-qr';
 import { Button } from '@/components/ui/mostrador/button';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
 import { StickyFooter } from '@/components/ui/mostrador/sticky-footer';
@@ -107,6 +108,7 @@ export default function SettingsTab() {
           <Text style={styles.urlLabel}>URL de autopedido (va en el QR)</Text>
           <Text selectable style={styles.url}>{url}</Text>
         </View>
+        <MenuQr url={url} />
         {canEdit ? null : <Text style={styles.helper}>Tu usuario puede ver estos datos pero no editarlos.</Text>}
       </>
     );
