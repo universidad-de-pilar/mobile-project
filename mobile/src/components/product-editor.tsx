@@ -40,6 +40,9 @@ type Loaded = { key: string; categories?: Category[]; product?: Product };
 /** Shared by `/admin/catalogo/nuevo` (no id) and `/admin/catalogo/[id]`. */
 export function ProductEditor({ id }: { id?: string }) {
   const { store, me } = useSession();
+  const router = useRouter();
+  // Al entrar por URL directa (web) no hay historial: vuelve al catálogo.
+  const back = () => (router.canGoBack() ? router.back() : router.replace('/admin/catalogo'));
   const allowed = me?.permissions.includes(id ? 'products:update' : 'products:create');
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -79,7 +82,7 @@ export function ProductEditor({ id }: { id?: string }) {
 
   return (
     <View style={styles.screen}>
-      <TopBar title={id ? 'Editar producto' : 'Nuevo producto'} store={store?.name} />
+      <TopBar title={id ? 'Editar producto' : 'Nuevo producto'} store={store?.name} onBack={back} />
       {form ?? (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {body}
