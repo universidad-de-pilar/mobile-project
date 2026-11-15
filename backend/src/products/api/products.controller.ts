@@ -38,8 +38,8 @@ export class ProductsController {
 
   @Get(':productId')
   @RequirePermissions('products:read')
-  get(@CurrentTenant() tenant: Tenant, @Param('productId', ParseUUIDPipe) productId: string) {
-    return this.getProduct.execute(tenant.tenant_id, productId);
+  get(@CurrentTenant() tenant: Tenant, @CurrentUserId() userId: string, @Param('productId', ParseUUIDPipe) productId: string) {
+    return this.getProduct.execute(tenant.tenant_id, productId, userId);
   }
 
   @Post()
