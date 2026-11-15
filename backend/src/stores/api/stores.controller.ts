@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
+import { CurrentUserId } from 'src/auth/api/current-user.decorator';
 import { RequirePermissions } from 'src/roles/api/require-permissions.decorator';
 import { CurrentTenant } from 'src/tenants/api/current-tenant.decorator';
 import { Tenant } from 'src/tenants/domain/tenant.entity';
@@ -17,14 +18,14 @@ export class StoresController {
 
   @Get()
   @RequirePermissions('stores:read')
-  list(@CurrentTenant() tenant: Tenant) {
-    return this.listStores.execute(tenant);
+  list(@CurrentTenant() tenant: Tenant, @CurrentUserId() userId: string) {
+    return this.listStores.execute(tenant, userId);
   }
 
   @Get(':storeId')
   @RequirePermissions('stores:read')
-  get(@CurrentTenant() tenant: Tenant, @Param('storeId', ParseUUIDPipe) storeId: string) {
-    return this.getStore.execute(tenant, storeId);
+  get(@CurrentTenant() tenant: Tenant, @CurrentUserId() userId: string, @Param('storeId', ParseUUIDPipe) storeId: string) {
+    return this.getStore.execute(tenant, storeId, userId);
   }
 
   @Patch(':storeId')

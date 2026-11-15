@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { canAccessStore } from "src/tenants/domain/store-access";
 import { TENANT_REPOSITORY, type ITenantRepository } from "src/tenants/domain/tenant.repository";
 import { storeNotFound } from "../domain/order.errors";
 import { ORDER_REPOSITORY, type IOrderRepository } from "../domain/order.repository";
@@ -23,8 +24,9 @@ export class ListOrdersUseCase {
         private readonly tenantRepository: ITenantRepository,
     ){}
 
-    async execute(tenantId: string, query: ListOrdersQuery){
-        if (!(await this.tenantRepository.isStoreOfTenant(tenantId, query.store_id))) throw storeNotFound();
+    async execute(tenantId: string, query: ListOrdersQuery, userId: string){
+        if (!(await this.tenantRepository.isStoreOfTenant(tenantId, query.store_id))
+            || !(await canAccessStore(this.tenantRepository, tenantId, userId, query.store_id))) throw storeNotFound();
 
         const page = query.page ?? 1;
         const limit = query.limit ?? 20;

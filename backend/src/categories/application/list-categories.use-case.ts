@@ -1,4 +1,5 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { canAccessStore } from "src/tenants/domain/store-access";
 import { TENANT_REPOSITORY, type ITenantRepository } from "src/tenants/domain/tenant.repository";
 import { CATEGORY_REPOSITORY, type ICategoryRepository } from "../domain/category.repository";
 
@@ -12,9 +13,9 @@ export class ListCategoriesUseCase {
         private readonly tenantRepository: ITenantRepository,
     ){}
 
-    async execute(tenantId: string, storeId: string){
+    async execute(tenantId: string, storeId: string, userId: string){
 
-        if (!(await this.tenantRepository.isStoreOfTenant(tenantId, storeId))){
+        if (!(await this.tenantRepository.isStoreOfTenant(tenantId, storeId)) || !(await canAccessStore(this.tenantRepository, tenantId, userId, storeId))){
             throw new NotFoundException({ statusCode: 404, message: 'Store not found', error: 'Not Found', code: 'STORE_NOT_FOUND' });
         }
 

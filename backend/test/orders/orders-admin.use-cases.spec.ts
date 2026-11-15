@@ -11,11 +11,12 @@ const expectCode = async (promise: Promise<unknown>, type: any, code: string) =>
 
 describe('Orders admin use cases', () => {
   const orderRepository = { list: jest.fn(), findById: jest.fn(), changeStatus: jest.fn() };
-  const tenantRepository = { isStoreOfTenant: jest.fn() };
+  const tenantRepository = { isStoreOfTenant: jest.fn(), allowedStoreIds: jest.fn() };
 
   beforeEach(() => {
     jest.clearAllMocks();
     tenantRepository.isStoreOfTenant.mockResolvedValue(true);
+    tenantRepository.allowedStoreIds.mockResolvedValue(null);
   });
 
   describe('ListOrdersUseCase', () => {
@@ -24,14 +25,21 @@ describe('Orders admin use cases', () => {
     it('debe fallar con STORE_NOT_FOUND si el local no es del tenant', async () => {
       tenantRepository.isStoreOfTenant.mockResolvedValue(false);
 
-      await expectCode(useCase().execute('t1', { store_id: 's1' }), NotFoundException, 'STORE_NOT_FOUND');
+      await expectCode(useCase().execute('t1', { store_id: 's1' }, 'u1'), NotFoundException, 'STORE_NOT_FOUND');
+      expect(orderRepository.list).not.toHaveBeenCalled();
+    });
+
+    it('debe ocultar con STORE_NOT_FOUND un local no asignado al empleado', async () => {
+      tenantRepository.allowedStoreIds.mockResolvedValue(['s2']);
+
+      await expectCode(useCase().execute('t1', { store_id: 's1' }, 'u1'), NotFoundException, 'STORE_NOT_FOUND');
       expect(orderRepository.list).not.toHaveBeenCalled();
     });
 
     it('debe usar page 1 y limit 20 por defecto y devolver data con meta', async () => {
       orderRepository.list.mockResolvedValue({ rows: [{ order_id: 'o1' }], total: 1 });
 
-      const result = await useCase().execute('t1', { store_id: 's1' });
+      const result = await useCase().execute('t1', { store_id: 's1' }, 'u1');
 
       expect(orderRepository.list).toHaveBeenCalledWith('t1', {
         store_id: 's1', status: undefined, from: undefined, to: undefined, offset: 0, limit: 20,
@@ -44,7 +52,7 @@ describe('Orders admin use cases', () => {
 
       const result = await useCase().execute('t1', {
         store_id: 's1', status: 'lista', from: '2026-11-01T00:00:00.000Z', to: '2026-11-02T00:00:00.000Z', page: 3, limit: 10,
-      });
+      }, 'u1');
 
       expect(orderRepository.list).toHaveBeenCalledWith('t1', {
         store_id: 's1', status: 'lista', from: '2026-11-01T00:00:00.000Z', to: '2026-11-02T00:00:00.000Z', offset: 20, limit: 10,
@@ -54,27 +62,42 @@ describe('Orders admin use cases', () => {
   });
 
   describe('GetOrderUseCase', () => {
-    const useCase = () => new GetOrderUseCase(orderRepository as any);
+    const useCase = () => new GetOrderUseCase(orderRepository as any, tenantRepository as any);
 
     it('debe fallar con ORDER_NOT_FOUND si no existe o es de otro tenant', async () => {
       orderRepository.findById.mockResolvedValue(null);
 
-      await expectCode(useCase().execute('t1', 'o1'), NotFoundException, 'ORDER_NOT_FOUND');
+      await expectCode(useCase().execute('t1', 'o1', 'u1'), NotFoundException, 'ORDER_NOT_FOUND');
       expect(orderRepository.findById).toHaveBeenCalledWith('t1', 'o1');
+    });
+
+    it('debe ocultar con ORDER_NOT_FOUND la orden de un local no asignado al empleado', async () => {
+      orderRepository.findById.mockResolvedValue({ order_id: 'o1', store_id: 's1', items: [] });
+      tenantRepository.allowedStoreIds.mockResolvedValue(['s2']);
+
+      await expectCode(useCase().execute('t1', 'o1', 'u1'), NotFoundException, 'ORDER_NOT_FOUND');
     });
 
     it('debe devolver el detalle de la orden', async () => {
       orderRepository.findById.mockResolvedValue({ order_id: 'o1', items: [] });
 
-      await expect(useCase().execute('t1', 'o1')).resolves.toEqual({ order_id: 'o1', items: [] });
+      await expect(useCase().execute('t1', 'o1', 'u1')).resolves.toEqual({ order_id: 'o1', items: [] });
     });
   });
 
   describe('ChangeOrderStatusUseCase', () => {
-    const useCase = () => new ChangeOrderStatusUseCase(orderRepository as any);
+    const useCase = () => new ChangeOrderStatusUseCase(orderRepository as any, tenantRepository as any);
 
     it('debe fallar con ORDER_NOT_FOUND si no existe', async () => {
       orderRepository.findById.mockResolvedValue(null);
+
+      await expectCode(useCase().execute('t1', 'o1', 'u1', 'en_preparacion'), NotFoundException, 'ORDER_NOT_FOUND');
+      expect(orderRepository.changeStatus).not.toHaveBeenCalled();
+    });
+
+    it('debe ocultar con ORDER_NOT_FOUND la orden de un local no asignado al empleado', async () => {
+      orderRepository.findById.mockResolvedValue({ order_id: 'o1', store_id: 's1', status: 'generada' });
+      tenantRepository.allowedStoreIds.mockResolvedValue(['s2']);
 
       await expectCode(useCase().execute('t1', 'o1', 'u1', 'en_preparacion'), NotFoundException, 'ORDER_NOT_FOUND');
       expect(orderRepository.changeStatus).not.toHaveBeenCalled();

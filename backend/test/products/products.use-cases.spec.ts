@@ -25,12 +25,13 @@ describe('Products use cases', () => {
     findAll: jest.fn(), findOne: jest.fn(), countByStore: jest.fn(), isCategoryOfStore: jest.fn(),
     create: jest.fn(), update: jest.fn(), delete: jest.fn(),
   };
-  const tenantRepository = { isStoreOfTenant: jest.fn() };
+  const tenantRepository = { isStoreOfTenant: jest.fn(), allowedStoreIds: jest.fn() };
   const input = { store_id: 's1', category_id: 'c1', name: 'Agua', price: '1500.00' };
 
   beforeEach(() => {
     jest.clearAllMocks();
     tenantRepository.isStoreOfTenant.mockResolvedValue(true);
+    tenantRepository.allowedStoreIds.mockResolvedValue(null);
     productRepository.isCategoryOfStore.mockResolvedValue(true);
     productRepository.countByStore.mockResolvedValue(0);
     productRepository.create.mockResolvedValue(row());
@@ -69,14 +70,21 @@ describe('Products use cases', () => {
     it('debe fallar con STORE_NOT_FOUND si el local no es del tenant', async () => {
       tenantRepository.isStoreOfTenant.mockResolvedValue(false);
 
-      await expectCode(useCase().execute('t1', { store_id: 's1' }), NotFoundException, 'STORE_NOT_FOUND');
+      await expectCode(useCase().execute('t1', { store_id: 's1' }, 'u1'), NotFoundException, 'STORE_NOT_FOUND');
+      expect(productRepository.findAll).not.toHaveBeenCalled();
+    });
+
+    it('debe ocultar con STORE_NOT_FOUND un local no asignado al empleado', async () => {
+      tenantRepository.allowedStoreIds.mockResolvedValue(['s2']);
+
+      await expectCode(useCase().execute('t1', { store_id: 's1' }, 'u1'), NotFoundException, 'STORE_NOT_FOUND');
       expect(productRepository.findAll).not.toHaveBeenCalled();
     });
 
     it('debe pasar los filtros acotados al tenant y mapear la respuesta', async () => {
       productRepository.findAll.mockResolvedValue([row({ image_path: 'x.webp' })]);
 
-      const result: any = await useCase().execute('t1', { store_id: 's1', category_id: 'c1', is_available: false });
+      const result: any = await useCase().execute('t1', { store_id: 's1', category_id: 'c1', is_available: false }, 'u1');
 
       expect(productRepository.findAll).toHaveBeenCalledWith('t1', { store_id: 's1', category_id: 'c1', is_available: false });
       expect(result[0].image_url).toBe('/media/x.webp');

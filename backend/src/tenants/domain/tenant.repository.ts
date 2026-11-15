@@ -26,5 +26,7 @@ export interface ITenantRepository{
     findBySlug(slug:string):Promise<Tenant | null>;
     isActiveMember(tenantId:string, userId:string):Promise<boolean>;
     isStoreOfTenant(tenantId:string, storeId:string):Promise<boolean>;
+    // null = sin restriccion (owner/root); para un empleado, sus locales activos asignados.
+    allowedStoreIds(tenantId:string, userId:string):Promise<string[] | null>;
     findActiveStoreBySlug(tenantId:string, slug:string):Promise<{ store_id:string; name:string; slug:string } | null>;
 }

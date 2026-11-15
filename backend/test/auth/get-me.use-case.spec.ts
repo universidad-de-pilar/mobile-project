@@ -5,6 +5,8 @@ describe('GetMeUseCase', () => {
   const userRepository = { getById: jest.fn() };
   const roleRepository = { getPermissionCodesByUserId: jest.fn(), isRoot: jest.fn() };
   const storeRepository = { list: jest.fn() };
+  const tenantRepository = { allowedStoreIds: jest.fn() };
+  const build = () => new GetMeUseCase(userRepository as any, roleRepository as any, storeRepository as any, tenantRepository as any);
   const store = (over: object = {}) => ({ store_id: 's1', name: 'Palermo', slug: 'palermo', is_active: true, address: null, ...over });
 
   beforeEach(() => {
@@ -14,11 +16,12 @@ describe('GetMeUseCase', () => {
     });
     roleRepository.getPermissionCodesByUserId.mockResolvedValue(['orders:read', 'orders:update']);
     roleRepository.isRoot.mockResolvedValue(false);
+    tenantRepository.allowedStoreIds.mockResolvedValue(null);
     storeRepository.list.mockResolvedValue([store(), store({ store_id: 's2', slug: 'centro', is_active: false })]);
   });
 
   it('debe devolver usuario, tenant, locales activos y permisos con el formato del contrato', async () => {
-    const me = await new GetMeUseCase(userRepository as any, roleRepository as any, storeRepository as any).execute(tenant, 'u1');
+    const me = await build().execute(tenant, 'u1');
 
     expect(storeRepository.list).toHaveBeenCalledWith('t1');
     expect(roleRepository.getPermissionCodesByUserId).toHaveBeenCalledWith('u1');
@@ -35,9 +38,19 @@ describe('GetMeUseCase', () => {
     roleRepository.isRoot.mockResolvedValue(true);
     roleRepository.getPermissionCodesByUserId.mockResolvedValue(['tenants:read']);
 
-    const me = await new GetMeUseCase(userRepository as any, roleRepository as any, storeRepository as any).execute(undefined, 'u1');
+    const me = await build().execute(undefined, 'u1');
 
     expect(storeRepository.list).not.toHaveBeenCalled();
     expect(me).toMatchObject({ tenant: null, stores: [], permissions: ['tenants:read'], is_root: true });
+  });
+
+  it('un empleado solo ve los locales asignados', async () => {
+    storeRepository.list.mockResolvedValue([store(), store({ store_id: 's2', slug: 'centro' })]);
+    tenantRepository.allowedStoreIds.mockResolvedValue(['s2']);
+
+    const me = await build().execute(tenant, 'u1');
+
+    expect(tenantRepository.allowedStoreIds).toHaveBeenCalledWith('t1', 'u1');
+    expect(me.stores).toEqual([{ store_id: 's2', name: 'Palermo', slug: 'centro' }]);
   });
 });

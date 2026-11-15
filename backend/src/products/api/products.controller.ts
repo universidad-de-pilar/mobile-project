@@ -3,6 +3,7 @@ import {
   UploadedFile, UseFilters, UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CurrentUserId } from 'src/auth/api/current-user.decorator';
 import { RequirePermissions } from 'src/roles/api/require-permissions.decorator';
 import { CurrentTenant } from 'src/tenants/api/current-tenant.decorator';
 import { Tenant } from 'src/tenants/domain/tenant.entity';
@@ -31,8 +32,8 @@ export class ProductsController {
 
   @Get()
   @RequirePermissions('products:read')
-  list(@CurrentTenant() tenant: Tenant, @Query() query: ListProductsQueryDto) {
-    return this.listProducts.execute(tenant.tenant_id, query);
+  list(@CurrentTenant() tenant: Tenant, @CurrentUserId() userId: string, @Query() query: ListProductsQueryDto) {
+    return this.listProducts.execute(tenant.tenant_id, query, userId);
   }
 
   @Get(':productId')

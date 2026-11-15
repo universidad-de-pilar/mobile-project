@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { CurrentUserId } from 'src/auth/api/current-user.decorator';
 import { RequirePermissions } from 'src/roles/api/require-permissions.decorator';
 import { CurrentTenant } from 'src/tenants/api/current-tenant.decorator';
 import { Tenant } from 'src/tenants/domain/tenant.entity';
@@ -19,8 +20,8 @@ export class CategoriesController {
 
   @Get()
   @RequirePermissions('categories:read')
-  list(@CurrentTenant() tenant: Tenant, @Query() query: ListCategoriesQueryDto) {
-    return this.listCategories.execute(tenant.tenant_id, query.store_id);
+  list(@CurrentTenant() tenant: Tenant, @CurrentUserId() userId: string, @Query() query: ListCategoriesQueryDto) {
+    return this.listCategories.execute(tenant.tenant_id, query.store_id, userId);
   }
 
   @Post()
