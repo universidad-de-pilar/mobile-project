@@ -202,7 +202,8 @@ export default function CatalogScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
   content: { flex: 1, minHeight: 0 },
-  chips: { flexGrow: 0 },
+  // flexShrink 0: en web el ScrollView encoge por defecto y la lista recortaba la fila de categorías.
+  chips: { flexGrow: 0, flexShrink: 0 },
   chipsContent: { gap: Spacing.sm, paddingHorizontal: Layout.screenPadding, paddingVertical: Spacing.sm },
   cap: {
     marginHorizontal: Layout.screenPadding,
