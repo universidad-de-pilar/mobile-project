@@ -52,5 +52,7 @@ There is no user management today: `backend/src/users` has only domain + infrast
 
 - T5 done (commit f7e3e86): `allowedStoreIds(tenantId, userId)` in `ITenantRepository` + Postgres (one query: active `employee` membership joined to active `users_stores`/stores of the tenant; no membership as employee = null, unrestricted) and helper `canAccessStore` (`tenants/domain/store-access.ts`). Applied to GetMe, GET /stores, GET /stores/:id, category/product lists, GET /orders (STORE_NOT_FOUND), GET /orders/:id and PATCH /orders/:id/status (ORDER_NOT_FOUND, chosen as the natural "hidden" 404 for an id-addressed order). `StoresModule` imports `TenantsModule`. RED: 5 suites / 8 tests failed before the code; GREEN: all pass. `npx tsc --noEmit` clean; `npm test` 43 suites / 399 tests pass; `npm run build` ok. Docs: `docs/api.md` (4.1, 12), `docs/testing.md`. Server/DB not run.
 
+- T5 manual test on Neon (2026-11-15, user-authorized; temporary store B inserted in local1 and deleted after): 8/8 cases as expected (owner sees A+B; employee /me and /stores only A; B returns 404 STORE_NOT_FOUND on store detail, categories, products and orders list; order of A by id 200; after PUT stores [B] only B visible). Not covered: order of another store by id (B had no orders). Cleanup verified (employee rows and store B deleted; local1 back to 1 active store).
+
 ## Next step
 Manual test of T5 on Neon (needs user OK) + PR #89 stacked on #88.
