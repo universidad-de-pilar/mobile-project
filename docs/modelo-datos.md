@@ -319,6 +319,26 @@ La biblioteca de medios y las playlists son **del tenant** (no cuelgan de un loc
 | `uq_screens_token` | UNIQUE (`token`) | Garantiza tokens únicos y sirve la búsqueda por token que hace cada consulta del player (camino caliente, RF-021, RF-023). |
 
 
+**`screen_pairings`**: vinculación de un televisor con una pantalla mediante un código corto. Es temporal: la fila se borra cuando el televisor recibe el token, y se limpian las vencidas al generar un código nuevo.
+
+| Columna | Tipo | Nulo | Default | Restricción | Por qué existe |
+| --- | --- | --- | --- | --- | --- |
+| `code` | VARCHAR(6) | no | | PK | Código que el televisor muestra y el dueño tipea (sin 0/O/1/I). Al ser la clave primaria es único en toda la plataforma, no solo por tenant. |
+| `claim_secret` | VARCHAR(64) | no | | UNIQUE `uq_screen_pairings_claim_secret` | Secreto aleatorio (base64url) que solo conoce el televisor. El código es visible en pantalla, así que solo este secreto permite recibir el token. |
+| `tenant_id` | UUID | no | | FK `tenants` | Aislamiento: el código solo se vincula y consulta dentro del tenant que lo generó. |
+| `screen_id` | UUID | sí | | FK `screens` `ON DELETE CASCADE` | `NULL` mientras está pendiente; al vincularse apunta a la pantalla cuyo token recibirá el televisor. |
+| `expires_at` | TIMESTAMPTZ | no | | | Vence a los 10 minutos: limita el tiempo en que un código visible puede ser adivinado o reutilizado. |
+| `created_at` | TIMESTAMPTZ | no | `CURRENT_TIMESTAMP` | | |
+
+Índices:
+
+| Índice | Definición | Por qué existe |
+| --- | --- | --- |
+| `uq_screen_pairings_claim_secret` | UNIQUE (`claim_secret`) | Garantiza secretos únicos y sirve la consulta del televisor por `claim_secret` cada pocos segundos. |
+| `ix_screen_pairings_tenant_expires` | (`tenant_id`, `expires_at`) | Hace barata la limpieza de códigos vencidos de un tenant al generar uno nuevo. |
+
+Se crea con `database/scripts/005_screen_pairings.sql`.
+
 **`screen_playlists`**: asignación de una playlist a una pantalla, por defecto o en una franja semanal. Una pantalla tiene como máximo una por defecto y cualquier cantidad de franjas.
 
 | Columna | Tipo | Nulo | Default | Restricción | Por qué existe |

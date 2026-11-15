@@ -30,6 +30,12 @@ export class UpdateScreenDto {
     is_active?: boolean;
 }
 
+export class PairScreenDto {
+    @IsString()
+    @Length(1, 32)
+    code: string;
+}
+
 const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export class SlotDto {

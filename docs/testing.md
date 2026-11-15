@@ -409,6 +409,12 @@ Los casos de estrés usan, salvo que se indique "meta propuesta", las metas de `
 | TC-236 | HU-25 | RF-037 | Pedidos concurrentes dentro y fuera del radio | Staging; local con ubicación guardada | k6: 100 VUs durante 5 min, 50% con coordenadas fuera del radio | 1. Ejecutar el script<br>2. Contar órdenes guardadas y respuestas 403 | 100% de los pedidos fuera del radio rechazados con 403 y sin orden; 100% de los de dentro guardados; p95 < 500 ms; errores inesperados < 1% | Estrés | Media | Sí (k6) |
 | TC-237 | HU-25 | RF-037 | Prueba con GPS real dentro y fuera del local | Celular Android real con GPS; local con ubicación guardada desde el mismo celular (RF-036) | pedido desde el local, desde la vereda a más de 100 m y con ubicación aproximada | 1. Confirmar el pedido en cada lugar<br>2. Repetir con ubicación aproximada (sin precisión alta) | Dentro: orden guardada; a más de 100 m: rechazo con el mensaje de estar en el local; con ubicación aproximada y precisión peor que 100 m: pide reintentar | Funcional feliz | Media | No (manual) |
 | TC-238 | HU-09 | RF-014 | Encabezado del menú muestra comercio y local | Tenant UNPILAR con local Cafeteria | menú público del local cafeteria | 1. Abrir el menú<br>2. Ver el subtítulo del encabezado (también en carrito y confirmación) | Subtítulo "UNPILAR · Cafeteria", sin el dominio; el catálogo devuelve `tenant: { name, slug }` (caso de uso cubierto con Jest) | Funcional feliz | Media | Parcial (Jest en caso de uso); encabezado manual |
+| TC-239 | HU-13 | RF-020 | Vincular un televisor con código | Sesión del dueño; pantalla Entrada registrada; televisor en `/screen` sin token | código mostrado en el televisor | 1. El televisor pide el código (`POST /player/pairings`)<br>2. El dueño lo tipea en "Vincular TV" (`POST /screens/:id/pair`)<br>3. El televisor consulta su estado | El televisor pasa de `pending` a `paired` con el token de Entrada y empieza a reproducir; recargar `/screen` sigue reproduciendo; la fila se borra al entregar el token. Jest: `screen-pairing.spec.ts` (casos de uso con mocks); el flujo completo queda para supertest/Playwright | Funcional feliz | Alta | Sí (Jest; Playwright pendiente) |
+| TC-240 | HU-13 | RF-020 | Código inválido, vencido, ajeno o ya usado | Sesión del dueño; código generado | código inexistente; código de hace más de 10 minutos; código de otro tenant; código ya vinculado | 1. `POST /screens/:id/pair` con cada código | 404 `PAIRING_CODE_INVALID` en todos los casos (mismo mensaje, no revela cuál) y no se vincula nada; se acepta con o sin guion y en minúsculas | Negativa | Alta | Sí (Jest; supertest pendiente) |
+| TC-241 | HU-13 | RF-020 | El código solo no entrega el token | Código vinculado a una pantalla | código mostrado en el televisor usado como `claim_secret`; `claim_secret` inventado; `claim_secret` de otro tenant | 1. `GET /player/pairings/:claimSecret` con cada valor<br>2. Repetir con el secreto correcto tras recibir el token | 404 `PAIRING_NOT_FOUND` con el código, el inventado y el de otro tenant; con el secreto correcto el primer pedido da el token y el segundo da 404 (la fila se borró) | Negativa (seguridad) | Alta | Sí (Jest; supertest pendiente) |
+| TC-242 | HU-13 | RF-020 | Vencimiento del código a los 10 minutos | Código generado; reloj controlado | código con `expires_at` en el pasado | 1. `GET /player/pairings/:claimSecret`<br>2. `POST /screens/:id/pair` con el código<br>3. Generar un código nuevo | Los dos primeros dan 404; al generar uno nuevo se borran los vencidos del tenant. Manual contra la base: la consulta SQL compara con `now()` | Límite | Media | No (manual); Jest cubre solo el mapeo a 404 |
+| TC-243 | HU-13 | RF-020 | Pantalla desactivada no recibe el token | Código vinculado a una pantalla con `is_active = false` | `claim_secret` del televisor | 1. `GET /player/pairings/:claimSecret` | Respuesta `pending` sin token y la fila se conserva; al reactivar la pantalla el televisor recibe el token | Negativa (seguridad) | Media | Sí (Jest; supertest pendiente) |
+| TC-244 | HU-13 | RF-020 | Fuerza bruta y secreto no adivinable | Staging | `claim_secret` de 43 caracteres (256 bits); códigos de 6 caracteres (32^6, cerca de 1.07e9) con vigencia de 10 minutos | 1. Generar 10 000 códigos y secretos<br>2. Probar 1 000 códigos al azar contra `POST /screens/:id/pair` | 0 colisiones de `claim_secret`; los códigos al azar no vinculan nada. Pendiente: limitar la tasa de intentos de vinculación (R2) | Estrés (seguridad) | Media | Sí (Jest para generación; k6 pendiente) |
 
 ### Resumen
 
@@ -815,6 +821,30 @@ Manual (contra la base):
 - PL-36 (no funcional, seguridad) Con el token de `local2`, `GET`/`PUT /screens/:id/schedule` de una pantalla de `local1` dan 404 (RNF-012); un empleado recibe 403 en ambos.
 
 Pending: supertest con base para el aislamiento por tenant, el reemplazo transaccional (`DELETE` + `unnest` con `JOIN playlists`), el 403 sin permiso y los 400 de validación (`days`, `HH:MM`, UUID, más de 50 franjas); PL-34 con k6.
+
+### Vinculación de TV con código (feature `pantallas-vinculacion`, RF-020, HU-13)
+
+Automated (`backend/test/screens/screen-pairing.spec.ts`):
+- Dominio: el código tiene 6 caracteres del alfabeto sin 0/O/1/I; `claim_secret` base64url de 43 caracteres y distinto en cada llamada; `normalizePairingCode` acepta guion, minúsculas y espacios (TC-239, TC-240).
+- Crear: devuelve código, `claim_secret` y vencimiento a 10 minutos; borra los vencidos del tenant; reintenta con otro código si el primero ya existe.
+- Consultar (`claim_secret`): 404 `PAIRING_NOT_FOUND` si no existe, venció o es de otro tenant; `pending` mientras nadie vincule; `paired` con el token y borra la fila; con la pantalla inactiva no entrega token ni borra (TC-241, TC-243).
+- Vincular: 404 `SCREEN_NOT_FOUND` si la pantalla no es del tenant (sin vincular); normaliza el código; 404 `PAIRING_CODE_INVALID` si el repositorio no vincula nada (inexistente, vencido, ajeno o ya vinculado; TC-240).
+
+Manual (contra la base, `database/scripts/005_screen_pairings.sql` aplicado): `POST /player/pairings` da 201 con `code`, `claim_secret` y `expires_at` a 10 minutos; `GET /player/pairings/:claim_secret` da `pending`; `POST /screens/:id/pair` con el código da 204 y el `GET` siguiente da `paired` con el token, y el `GET` posterior 404; con `expires_at` en el pasado ambos dan 404 (TC-242); `X-Tenant-Slug` de otro tenant da 404 en el `GET` y en el `pair`; el mismo `code` no se puede vincular dos veces; desactivar la pantalla antes del `GET` deja `pending`.
+
+Automated frontend (`mobile/src/lib/pairing-rules.test.ts`): formato `XXX-XXX`; normalización de lo que tipea el dueño (minúsculas, guion, espacios, tope de 6); decisión del sondeo (`paired`, `pending`, 404 o vencido local pide código nuevo, error de red sigue esperando); mensaje "Código inválido o vencido" ante `PAIRING_CODE_INVALID` (TC-239, TC-240, TC-242).
+
+Manual frontend (web, TC-239 a TC-243; requiere el script 005 aplicado):
+1. Abrir `/screen` sin token guardado: se ve el código grande `XXX-XXX` con la instrucción "Pantallas → tu pantalla → Vincular TV".
+2. En el panel, Pantallas → la pantalla → "Conectar al televisor": tipear el código en minúsculas o con guion y tocar "Vincular": aparece "TV vinculada" y en menos de ~4 s el televisor empieza a reproducir.
+3. Recargar `/screen`: sigue reproduciendo sin pedir código (token en `localStorage`, la URL no lo contiene). `/screen/<token>` sigue funcionando igual.
+4. Tipear un código inexistente, vencido o ya usado: "Código inválido o vencido" y no se vincula nada.
+5. Dejar `/screen` más de 10 minutos sin vincular: el código se renueva solo; el anterior ya no sirve.
+6. Cortar la red mientras el televisor espera: no se rompe y retoma el sondeo al volver.
+7. Desactivar la pantalla vinculada: el reproductor recibe 404, borra el token guardado y `/screen` vuelve al modo vinculación con un código nuevo.
+8. Usuario sin `screens:update`: no ve el campo de código, solo el enlace.
+
+Pending: supertest con base para el aislamiento por tenant, la expiración en SQL (`now()`), el `UPDATE ... RETURNING` atómico y el 403 sin `screens:update`; limitar la tasa de intentos contra `/screens/:id/pair` (TC-244).
 
 ### Reproductor: playlist (#71, RF-021 a RF-024)
 

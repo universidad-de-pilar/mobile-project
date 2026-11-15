@@ -6,6 +6,7 @@ import { setupLogging } from '../../src/logging/setup-logging';
 import { setupCompression } from '../../src/http/setup-compression';
 import { PlayerController } from '../../src/screens/api/player.controller';
 import { GetPlaylistUseCase } from '../../src/screens/application/get-playlist.use-case';
+import { ClaimPairingUseCase, CreatePairingUseCase } from '../../src/screens/application/screen-pairing.use-cases';
 
 @Controller()
 class BigController {
@@ -26,7 +27,11 @@ describe('http compression', () => {
     const logger = new AppLogger({ mode: 'json', resource, write: (l) => lines.push(l) });
     const mod = await Test.createTestingModule({
       controllers: [BigController, PlayerController],
-      providers: [{ provide: GetPlaylistUseCase, useValue: { execute: async () => playlist } }],
+      providers: [
+        { provide: GetPlaylistUseCase, useValue: { execute: async () => playlist } },
+        { provide: CreatePairingUseCase, useValue: {} },
+        { provide: ClaimPairingUseCase, useValue: {} },
+      ],
     }).compile();
     app = mod.createNestApplication();
     setupLogging(app, logger);

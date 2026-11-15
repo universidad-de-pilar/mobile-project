@@ -1,13 +1,30 @@
-import { Controller, Get, Headers, Param, Res } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { Public } from 'src/auth/api/public.decorator';
 import { CurrentTenant } from 'src/tenants/api/current-tenant.decorator';
 import { Tenant } from 'src/tenants/domain/tenant.entity';
 import { GetPlaylistUseCase } from '../application/get-playlist.use-case';
+import { ClaimPairingUseCase, CreatePairingUseCase } from '../application/screen-pairing.use-cases';
 
 @Controller('player')
 export class PlayerController {
-  constructor(private readonly getPlaylist: GetPlaylistUseCase) {}
+  constructor(
+    private readonly getPlaylist: GetPlaylistUseCase,
+    private readonly createPairing: CreatePairingUseCase,
+    private readonly claimPairing: ClaimPairingUseCase,
+  ) {}
+
+  @Public()
+  @Post('pairings')
+  pairings(@CurrentTenant() tenant: Tenant) {
+    return this.createPairing.execute(tenant);
+  }
+
+  @Public()
+  @Get('pairings/:claimSecret')
+  claim(@CurrentTenant() tenant: Tenant, @Param('claimSecret') claimSecret: string) {
+    return this.claimPairing.execute(tenant, claimSecret);
+  }
 
   @Public()
   @Get(':token/playlist')

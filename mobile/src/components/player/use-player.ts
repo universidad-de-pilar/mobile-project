@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { clearCachedPlaylist, fetchPlaylist, loadCachedPlaylist, saveCachedPlaylist } from '@/lib/player-api';
+import { clearCachedPlaylist, clearStoredToken, fetchPlaylist, loadCachedPlaylist, saveCachedPlaylist } from '@/lib/player-api';
 import {
   advance,
   DEFAULT_POLL_SECONDS,
@@ -32,6 +32,7 @@ export function usePlayer(token: string) {
       if (!active) return;
       if (outcome.kind === 'invalid') {
         clearCachedPlaylist(token);
+        clearStoredToken(token);
         setInvalid(true);
         return;
       }

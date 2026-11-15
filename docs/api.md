@@ -503,6 +503,12 @@ Esquema `Screen`:
 ### `PATCH /screens/:screenId`
 - Permiso: `screens:update`. RF-020. Body: `name` y/o `is_active`. `is_active: false` hace que el reproductor reciba 404 (acceso revocado). No hay borrado en R1 para conservar el origen de los pedidos. Respuesta 200: `Screen`. Errores: 404.
 
+### `POST /screens/:screenId/pair`
+- Permiso: `screens:update`. Vincula el televisor que muestra un código corto con esta pantalla (sección 10, "Vinculación con código").
+- Request: `{ "code": "ABC-D23" }`. Se acepta con o sin guion, en mayúsculas o minúsculas y con espacios en los extremos.
+- Efecto: asocia un código **pendiente y vigente del mismo tenant** a la pantalla. El televisor recibe el token de la pantalla en su siguiente consulta.
+- Respuesta **204** sin cuerpo. Errores: 404 `SCREEN_NOT_FOUND` (pantalla inexistente o de otro tenant); 404 `PAIRING_CODE_INVALID` (código inexistente, vencido, de otro tenant o ya vinculado; el mismo 404 en todos los casos).
+
 ### Agenda de la pantalla: playlist por defecto y franjas
 
 Cada pantalla tiene **como máximo una playlist por defecto** y **cero o más franjas semanales**. La playlist y la pantalla deben ser del mismo tenant, pero pueden ser de **cualquier local** del tenant. Fuera de toda franja se reproduce la playlist por defecto; si no hay por defecto ni franja activa, la pantalla no reproduce nada. No hay prioridades: las franjas de una misma pantalla **no pueden solaparse**.
@@ -664,6 +670,21 @@ Audiencia: televisor. Sin login. El reproductor web vive en la ruta `/screen/:to
 - Los archivos de `/media/...` tienen `Cache-Control: public, max-age=31536000, immutable` (el nombre es un UUID que nunca cambia), por lo que el navegador y el Service Worker pueden cachearlos.
 - Errores: 404 `SCREEN_NOT_FOUND` (token inexistente, pantalla con `is_active = false`, token de otro tenant o local desactivado; en todos los casos el mismo 404 para no revelar cuál).
 
+### Vinculación con código (`/player/pairings`)
+
+El televisor abre `/screen` sin token, pide un código corto, lo muestra como `XXX-XXX` y espera. El dueño lo tipea en el backoffice (`POST /screens/:screenId/pair`) y el televisor recibe el token de su pantalla.
+
+### `POST /player/pairings`
+- Auth: `@Public()`; tenant por Host o `X-Tenant-Slug`. Sin body.
+- Respuesta **201**: `{ "code": "ABCD23", "claim_secret": "q7Vx2n…43caracteres", "expires_at": "2026-11-15T12:10:00.000Z" }`.
+- `code`: 6 caracteres de `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (sin 0, O, 1, I), único en la plataforma. `claim_secret`: 32 bytes aleatorios en base64url; solo lo conoce el televisor. Vence a los **10 minutos**. Al crear uno se borran los vencidos del tenant.
+
+### `GET /player/pairings/:claimSecret`
+- Auth: `@Public()`; el `claim_secret` es la credencial (el código solo no alcanza para obtener el token). El televisor lo consulta periódicamente.
+- Respuesta **200**: `{ "status": "pending" }` mientras nadie vincule el código, o `{ "status": "paired", "token": "…" }` con el token de la pantalla; al entregarlo la fila se borra, así que un segundo pedido da 404.
+- Si la pantalla vinculada está desactivada (`is_active = false`) no se entrega el token y la respuesta sigue siendo `pending`.
+- Errores: 404 `PAIRING_NOT_FOUND` (inexistente, vencido, ya entregado o de otro tenant; el mismo 404 en todos los casos).
+
 ## 11. Cliente público (`/public`, `/media`)
 
 Audiencia: persona que escaneó el QR. Anónimo. Tenant por Host (`local1.mostrador.io`), local por el segmento de ruta.
@@ -809,7 +830,7 @@ Estilo de código existente: `recurso:acción` (por ejemplo `products:create`, c
 | `content:delete` | `DELETE /content/:id`, `DELETE /playlists/:id` | sí | no |
 | `screens:read` | `GET /screens`, `GET /screens/:id/schedule` | sí | no |
 | `screens:create` | `POST /screens` | sí | no |
-| `screens:update` | `PATCH /screens/:id`, `PUT /screens/:id/schedule` (asignar playlists a la pantalla) | sí | no |
+| `screens:update` | `PATCH /screens/:id`, `PUT /screens/:id/schedule` (asignar playlists a la pantalla), `POST /screens/:id/pair` | sí | no |
 | `orders:read` | `GET /orders`, `GET /orders/:id` | sí | sí |
 | `orders:update` | `PATCH /orders/:id/status` | sí | sí |
 | `employees:read` | `GET /employees` | sí | no |
@@ -829,9 +850,9 @@ Estilo de código existente: `recurso:acción` (por ejemplo `products:create`, c
 | Audiencia | Endpoints | Rutas |
 | --- | --- | --- |
 | Autenticación existente | 2 | `POST /auth/register`, `POST /auth/login` |
-| Backoffice (JWT) | 33 | `/me` 1; `/stores` 3; `/categories` 4; `/products` 7; `/content` 3; `/playlists` 7; `/screens` 5; `/orders` 3 |
+| Backoffice (JWT) | 34 | `/me` 1; `/stores` 3; `/categories` 4; `/products` 7; `/content` 3; `/playlists` 7; `/screens` 6; `/orders` 3 |
 | Administrador de la plataforma (JWT `root`) | 3 | `/tenants` 3 (sección 3.1) |
-| Pantalla (token) | 1 | `GET /player/:token/playlist` |
+| Pantalla (token o código) | 3 | `GET /player/:token/playlist`, `POST /player/pairings`, `GET /player/pairings/:claimSecret` |
 | Cliente público (anónimo) | 3 | `GET /public/stores/:storeSlug/catalog`, `POST /public/stores/:storeSlug/orders`, `GET /media/*` |
 | **Total R1** | **42** | |
 

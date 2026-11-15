@@ -6,6 +6,12 @@ export const storeNotFound = () =>
 export const screenNotFound = () =>
     new NotFoundException({ statusCode: 404, message: 'Screen not found', error: 'Not Found', code: 'SCREEN_NOT_FOUND' });
 
+export const pairingNotFound = () =>
+    new NotFoundException({ statusCode: 404, message: 'Pairing not found or expired', error: 'Not Found', code: 'PAIRING_NOT_FOUND' });
+
+export const pairingCodeInvalid = () =>
+    new NotFoundException({ statusCode: 404, message: 'Pairing code invalid, expired or already used', error: 'Not Found', code: 'PAIRING_CODE_INVALID' });
+
 export const emptyUpdate = () =>
     new BadRequestException({ statusCode: 400, message: 'Send at least one field to update', error: 'Bad Request', code: 'EMPTY_UPDATE' });
 

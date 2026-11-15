@@ -10,11 +10,13 @@ import { SlotSheet } from '@/components/pantallas/slot-sheet';
 import { Button } from '@/components/ui/mostrador/button';
 import { Chip } from '@/components/ui/mostrador/chip';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
+import { TextField } from '@/components/ui/mostrador/text-field';
 import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
 import { narrowBlock, useWide } from '@/components/ui/mostrador/use-wide';
 import { useSession } from '@/context/SessionContext';
-import { getSchedule, listPlaylists, listScreens, saveSchedule, type Playlist, type Screen } from '@/lib/admin-api';
+import { getSchedule, listPlaylists, listScreens, pairScreen, saveSchedule, type Playlist, type Screen } from '@/lib/admin-api';
+import { normalizePairingInput, pairErrorMessage } from '@/lib/pairing-rules';
 import { addSlot, removeSlotAt, scheduleErrorMessage, setDefault, slotLabel, toInput, updateSlot, type ScheduleInput, type SlotInput } from '@/lib/schedule-rules';
 
 type Status = 'idle' | 'saving' | 'saved' | { error: string };
@@ -38,6 +40,8 @@ export default function ScreenDetail() {
   const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
   const [tvOpen, setTvOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pairCode, setPairCode] = useState('');
+  const [pairStatus, setPairStatus] = useState<'idle' | 'saving' | 'ok' | { error: string }>('idle');
 
   useEffect(() => {
     if (!store) return;
@@ -81,6 +85,17 @@ export default function ScreenDetail() {
       setCopied(true);
     } catch {
       setCopied(false);
+    }
+  }
+
+  async function pair() {
+    setPairStatus('saving');
+    try {
+      await pairScreen(id, pairCode);
+      setPairCode('');
+      setPairStatus('ok');
+    } catch (e) {
+      setPairStatus({ error: pairErrorMessage(e) });
     }
   }
 
@@ -176,12 +191,34 @@ export default function ScreenDetail() {
           <Ionicons name={tvOpen ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.ink} />
         </Pressable>
         {tvOpen ? (
-          <View style={styles.tv}>
-            <Text style={styles.tvHint}>Abrí este enlace en el navegador del televisor.</Text>
-            <Text selectable style={styles.tvUrl}>{screen.player_url}</Text>
-            <Button title="Copiar enlace" variant="secondary" onPress={() => void copy(screen.player_url)} fullWidth />
-            {copied ? <Text accessibilityRole="alert" style={styles.ok}>Enlace copiado</Text> : null}
-          </View>
+          <>
+            {canEdit ? (
+              <View style={styles.pair}>
+                <Text style={styles.hint}>Abrí /screen en el televisor e ingresá el código que muestra.</Text>
+                <TextField
+                  label="Código del televisor"
+                  value={pairCode}
+                  onChangeText={(t) => {
+                    setPairCode(normalizePairingInput(t));
+                    setPairStatus('idle');
+                  }}
+                  placeholder="ABC-D23"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={7}
+                />
+                <Button title={pairStatus === 'saving' ? 'Vinculando...' : 'Vincular'} disabled={pairCode.length < 6 || pairStatus === 'saving'} onPress={() => void pair()} fullWidth />
+                {pairStatus === 'ok' ? <Text accessibilityRole="alert" style={styles.ok}>TV vinculada</Text> : null}
+                {typeof pairStatus === 'object' ? <Text accessibilityRole="alert" style={styles.error}>{pairStatus.error}</Text> : null}
+              </View>
+            ) : null}
+            <View style={styles.tv}>
+              <Text style={styles.tvHint}>{canEdit ? 'O abrí' : 'Abrí'} este enlace en el navegador del televisor.</Text>
+              <Text selectable style={styles.tvUrl}>{screen.player_url}</Text>
+              <Button title="Copiar enlace" variant="secondary" onPress={() => void copy(screen.player_url)} fullWidth />
+              {copied ? <Text accessibilityRole="alert" style={styles.ok}>Enlace copiado</Text> : null}
+            </View>
+          </>
         ) : null}
       </ScrollView>
       {sheet ? (
@@ -205,6 +242,7 @@ const styles = StyleSheet.create({
   tvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: Layout.minTouchTarget },
   tv: { gap: Spacing.sm, padding: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Colors.ink },
   tvHint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
+  pair: { gap: Spacing.sm },
   tvUrl: { color: Colors.surface, fontFamily: Fonts.bold, fontSize: Typography.body },
   hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
   ok: { color: Colors.success, fontFamily: Fonts.medium, fontSize: Typography.caption },

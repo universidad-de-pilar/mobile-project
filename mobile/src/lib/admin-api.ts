@@ -213,6 +213,9 @@ export const listScreens = (storeId: string) => authRequest<Screen[]>(`/screens?
 export const createScreen = (storeId: string, name: string) =>
   authRequest<Screen>('/screens', json('POST', { store_id: storeId, name }));
 
+export const pairScreen = (screenId: string, code: string) =>
+  authRequest<unknown>(`/screens/${screenId}/pair`, json('POST', { code }));
+
 export type Employee = {
   user_id: string;
   email: string;

@@ -43,6 +43,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="[storeSlug]" options={{ headerShown: false }} />
           <Stack.Screen name="admin" options={{ headerShown: false }} />
+          <Stack.Screen name="screen/index" options={{ headerShown: false }} />
           <Stack.Screen name="screen/[token]" options={{ headerShown: false }} />
         </Stack>
       </CartProvider>
