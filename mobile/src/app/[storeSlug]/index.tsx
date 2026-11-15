@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   columns: { gap: Spacing.md },
   // Fixed third of the row (minus both gaps) so a short last row keeps its column width.
   cell: { width: 'calc((100% - 24px) / 3)' } as unknown as ViewStyle,
-  list: { gap: Spacing.md, paddingHorizontal: Layout.screenPadding, paddingBottom: Spacing.lg },
+  list: { gap: Spacing.md, paddingHorizontal: Layout.screenPadding, paddingTop: Spacing.sm, paddingBottom: Spacing.lg },
   cartButton: { paddingHorizontal: Spacing.md },
   cartText: { fontSize: Typography.bodyLarge },
 });
