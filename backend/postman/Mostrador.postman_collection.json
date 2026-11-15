@@ -98,6 +98,18 @@
     {
       "key": "etag",
       "value": ""
+    },
+    {
+      "key": "employeeId",
+      "value": ""
+    },
+    {
+      "key": "employeeEmail",
+      "value": ""
+    },
+    {
+      "key": "employeeToken",
+      "value": ""
     }
   ],
   "item": [
@@ -5303,6 +5315,803 @@
             "description": "Pide la playlist de un token que no existe. Espera 404 `SCREEN_NOT_FOUND`.",
             "auth": {
               "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Employees",
+      "description": "Gestión de empleados por el dueño (alta, edición, activación y locales asignados). El empleado solo ve los locales que tiene asignados y no accede a `/employees`.",
+      "item": [
+        {
+          "name": "Login (guarda el token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().access_token;",
+                  "pm.test('Devuelve access_token', () => pm.expect(t).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('ownerToken', t);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión con el dueño del tenant creado en 01 Admin y guarda el JWT en `ownerToken`. Espera 200 y un `access_token`.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"{{ownerEmail}}\", \"password\": \"{{ownerPassword}}\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Obtener el local (guarda store_id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Hay al menos un local', () => { const b = pm.response.json(); pm.expect(b).to.be.an('array').that.is.not.empty; });",
+                  "pm.collectionVariables.set('storeId', pm.response.json()[0].store_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stores"
+              ]
+            },
+            "description": "Lista los locales del tenant y guarda el primero en `storeId`. Espera 200 y un arreglo con al menos un local.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar empleados (incluye al dueño)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye al dueño', () => { const b = pm.response.json(); pm.expect(b).to.be.an('array'); pm.expect(b.map(e => e.role)).to.include('owner'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "description": "Lista los empleados del tenant, el dueño incluido. Espera 200 y un arreglo con un usuario de rol `owner`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear empleado (guarda user_id)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cv = pm.collectionVariables;",
+                  "cv.set('employeeEmail', 'ana-' + cv.get('runId') + '@local3.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('Empleado activo con el local asignado', () => { pm.expect(b.role).to.eql('employee'); pm.expect(b.is_active).to.eql(true); pm.expect(b.store_ids).to.eql([pm.collectionVariables.get('storeId')]); });",
+                  "pm.collectionVariables.set('employeeId', b.user_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "description": "Crea un empleado con email único por ejecución (`employeeEmail`), asignado al local de `storeId`, y guarda su `user_id` en `employeeId`. Espera 201 con rol `employee`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"{{employeeEmail}}\", \"first_name\": \"Ana\", \"last_name\": \"Perez\", \"password\": \"Ana-dev-2026!\", \"store_ids\": [\"{{storeId}}\"] }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Email repetido (409 EMAIL_TAKEN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('code EMAIL_TAKEN', () => pm.expect(pm.response.json().code).to.eql('EMAIL_TAKEN'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "description": "Repite el alta con el mismo email. Espera 409 con `code` `EMAIL_TAKEN`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"{{employeeEmail}}\", \"first_name\": \"Ana\", \"last_name\": \"Perez\", \"password\": \"Ana-dev-2026!\", \"store_ids\": [\"{{storeId}}\"] }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Sin locales (400 INVALID_STORES)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('code INVALID_STORES', () => pm.expect(pm.response.json().code).to.eql('INVALID_STORES'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "description": "Crea un empleado con `store_ids` vacío. Espera 400 con `code` `INVALID_STORES`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"luis-{{runId}}@local3.test\", \"first_name\": \"Luis\", \"last_name\": \"Gomez\", \"password\": \"Luis-dev-2026!\", \"store_ids\": [] }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login del empleado (guarda el token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().access_token;",
+                  "pm.test('Devuelve access_token', () => pm.expect(t).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('employeeToken', t);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión con el empleado recién creado y guarda el JWT en `employeeToken`. Espera 200 y un `access_token`.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"{{employeeEmail}}\", \"password\": \"Ana-dev-2026!\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Empleado no gestiona empleados (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees"
+              ]
+            },
+            "description": "El rol `employee` no tiene permisos `employees:*`. Con `employeeToken`, espera 403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Empleado ve solo su local asignado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Solo el local asignado', () => { const ids = pm.response.json().map(s => s.store_id); pm.expect(ids).to.eql([pm.collectionVariables.get('storeId')]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stores"
+              ]
+            },
+            "description": "Con `employeeToken`, `GET /stores` devuelve solo los locales asignados al empleado. Espera 200 con el local de `storeId`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Editar nombre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Nombre actualizado', () => pm.expect(pm.response.json().first_name).to.eql('Anita'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            },
+            "description": "Cambia el nombre del empleado. Espera 200 con `first_name` actualizado.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"first_name\": \"Anita\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Desactivar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Inactivo', () => pm.expect(pm.response.json().is_active).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            },
+            "description": "Desactiva la membresía del empleado. Espera 200 con `is_active` en `false`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"is_active\": false }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Token del empleado desactivado queda bloqueado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 o 403', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stores"
+              ]
+            },
+            "description": "Con el empleado desactivado, su token ya no sirve. Espera 401 o 403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reactivar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Activo', () => pm.expect(pm.response.json().is_active).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}"
+              ]
+            },
+            "description": "Reactiva al empleado. Espera 200 con `is_active` en `true`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"is_active\": true }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reemplazar locales",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Locales asignados', () => pm.expect(pm.response.json().store_ids).to.eql([pm.collectionVariables.get('storeId')]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees/{{employeeId}}/stores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "{{employeeId}}",
+                "stores"
+              ]
+            },
+            "description": "Reemplaza los locales del empleado. Espera 200 con `store_ids` igual a `[storeId]`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"store_ids\": [\"{{storeId}}\"] }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Empleado inexistente (404 EMPLOYEE_NOT_FOUND)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('code EMPLOYEE_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('EMPLOYEE_NOT_FOUND'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-Tenant-Slug",
+                "value": "{{tenantSlug}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employees/00000000-0000-4000-8000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employees",
+                "00000000-0000-4000-8000-000000000000"
+              ]
+            },
+            "description": "Edita un id que no pertenece al tenant. Espera 404 con `code` `EMPLOYEE_NOT_FOUND`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"is_active\": false }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }
