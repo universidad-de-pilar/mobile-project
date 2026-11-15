@@ -1,18 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  Fonts,
-  Radius,
-  Spacing,
-} from './tokens';
+import { Button } from './button';
+import { Colors, Fonts, Radius, Spacing, Typography } from './tokens';
 
 type FeedbackStateProps = {
   type: 'loading' | 'empty' | 'error';
@@ -37,6 +28,29 @@ const DEFAULT_CONTENT = {
   },
 };
 
+function Skeleton() {
+  const [opacity] = useState(() => new Animated.Value(0.5));
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.skeleton}>
+      {[0, 1, 2].map((i) => (
+        <Animated.View key={i} style={[styles.skeletonRow, { opacity }]} />
+      ))}
+    </View>
+  );
+}
+
 export function FeedbackState({
   type,
   title,
@@ -45,54 +59,40 @@ export function FeedbackState({
   onAction,
 }: FeedbackStateProps) {
   const content = DEFAULT_CONTENT[type];
+  const resolvedTitle = title ?? content.title;
+  const resolvedMessage = message ?? content.message;
+
+  if (type === 'loading') {
+    return (
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel={`${resolvedTitle} ${resolvedMessage}`}
+        style={styles.container}
+      >
+        <Skeleton />
+        <Text style={styles.title}>{resolvedTitle}</Text>
+        <Text style={styles.message}>{resolvedMessage}</Text>
+      </View>
+    );
+  }
+
+  const isError = type === 'error';
 
   return (
-    <View
-      accessibilityRole="summary"
-      style={styles.container}
-    >
-      {type === 'loading' ? (
-        <ActivityIndicator
-          size="large"
-          color={Colors.primary}
-          accessibilityLabel="Cargando"
+    <View accessibilityRole="summary" style={styles.container}>
+      <View style={[styles.indicator, isError && styles.errorIndicator]}>
+        <Ionicons
+          name={isError ? 'alert-circle-outline' : 'file-tray-outline'}
+          size={24}
+          color={isError ? Colors.danger : Colors.primary}
         />
-      ) : (
-        <View
-          style={[
-            styles.indicator,
-            type === 'error' && styles.errorIndicator,
-          ]}
-        >
-          <Text
-            style={[
-              styles.indicatorText,
-              type === 'error' && styles.errorText,
-            ]}
-          >
-            {type === 'empty' ? '—' : '!'}
-          </Text>
-        </View>
-      )}
+      </View>
 
-      <Text style={styles.title}>{title ?? content.title}</Text>
+      <Text style={styles.title}>{resolvedTitle}</Text>
+      <Text style={styles.message}>{resolvedMessage}</Text>
 
-      <Text style={styles.message}>
-        {message ?? content.message}
-      </Text>
-
-      {actionLabel && onAction && type !== 'loading' ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={actionLabel}
-          onPress={onAction}
-          style={({ pressed }) => [
-            styles.action,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={styles.actionText}>{actionLabel}</Text>
-        </Pressable>
+      {actionLabel && onAction ? (
+        <Button size="sm" title={actionLabel} onPress={onAction} />
       ) : null}
     </View>
   );
@@ -110,6 +110,15 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: Radius.lg,
   },
+  skeleton: {
+    width: '100%',
+    gap: Spacing.sm,
+  },
+  skeletonRow: {
+    height: 64,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.border,
+  },
   indicator: {
     width: 44,
     height: 44,
@@ -121,39 +130,16 @@ const styles = StyleSheet.create({
   errorIndicator: {
     backgroundColor: Colors.dangerSoft,
   },
-  indicatorText: {
-    color: Colors.primary,
-    fontSize: 24,
-    fontFamily: Fonts.bold,
-  },
-  errorText: {
-    color: Colors.danger,
-  },
   title: {
     color: Colors.ink,
-    fontSize: 16,
+    fontSize: Typography.regular,
     fontFamily: Fonts.bold,
     textAlign: 'center',
   },
   message: {
     color: Colors.muted,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
     textAlign: 'center',
-  },
-  action: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.primary,
-  },
-  actionText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: Fonts.medium,
-  },
-  pressed: {
-    opacity: 0.8,
   },
 });
