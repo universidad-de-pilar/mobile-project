@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 
 import { Button } from '@/components/ui/mostrador/button';
 import { Chip } from '@/components/ui/mostrador/chip';
-import { Colors, Fonts, Layout, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import type { Playlist } from '@/lib/admin-api';
 import { DAY_LABELS, DAY_SHORTCUTS, endOptions, formatTime, startOptions, toggleDay, type SlotInput } from '@/lib/schedule-rules';
 
@@ -83,15 +83,15 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(28, 25, 23, 0.5)' },
   sheet: { maxHeight: '92%', width: '100%', maxWidth: 520, alignSelf: 'center', backgroundColor: Colors.surface, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, overflow: 'hidden' },
   content: { padding: Spacing.lg, gap: Spacing.sm },
-  title: { color: Colors.ink, fontFamily: Fonts.title, fontSize: 20 },
-  label: { color: Colors.muted, fontFamily: Fonts.medium, fontSize: 12 },
+  title: { color: Colors.ink, fontFamily: Fonts.title, fontSize: Typography.subtitle },
+  label: { color: Colors.muted, fontFamily: Fonts.medium, fontSize: Typography.small },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
   times: { flexDirection: 'row', gap: Spacing.md },
   column: { flex: 1, gap: Spacing.xs },
   timeList: { height: Layout.minTouchTarget * 3, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md },
   time: { minHeight: Layout.minTouchTarget, alignItems: 'center', justifyContent: 'center' },
   timeOn: { backgroundColor: Colors.ink },
-  timeText: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: 16 },
+  timeText: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: Typography.regular },
   timeTextOn: { color: Colors.surface },
   footer: { flexDirection: 'row', gap: Spacing.md, padding: Spacing.lg, borderTopWidth: 1, borderTopColor: Colors.border },
   half: { flex: 1 },

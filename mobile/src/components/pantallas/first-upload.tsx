@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/mostrador/button';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { createPlaylist, savePlaylistItems, type Playlist } from '@/lib/admin-api';
 import { DEFAULT_IMAGE_SECONDS, itemsPayload } from '@/lib/content-rules';
 import { createSubmitLock } from '@/lib/submit-lock';
@@ -44,7 +44,7 @@ export function FirstUpload({ screenName, onCreated }: { screenName: string; onC
 
 const styles = StyleSheet.create({
   box: { gap: Spacing.sm, padding: Spacing.lg, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.primary, backgroundColor: Colors.primarySoft },
-  title: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: 18 },
-  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 13 },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 12 },
+  title: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: Typography.large },
+  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.caption },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.small },
 });

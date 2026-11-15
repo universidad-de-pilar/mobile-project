@@ -11,7 +11,7 @@ import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
 import { ListRow } from '@/components/ui/mostrador/list-row';
 import { Stepper } from '@/components/ui/mostrador/stepper';
 import { TextField } from '@/components/ui/mostrador/text-field';
-import { Colors, Fonts, Layout, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
 import { narrowBlock, useWide } from '@/components/ui/mostrador/use-wide';
 import { useSession } from '@/context/SessionContext';
@@ -129,7 +129,7 @@ export default function ListEditor() {
   if (failed || name === null) {
     return (
       <View style={styles.screen}>
-        <TopBar title="Lista" />
+        <TopBar title="Lista" onBack={() => router.back()} />
         {failed ? (
           <FeedbackState type="error" title="No pudimos cargar la lista" message="Puede que ya no exista." actionLabel="Volver" onAction={() => router.back()} />
         ) : (
@@ -141,10 +141,9 @@ export default function ListEditor() {
 
   return (
     <View style={styles.screen}>
-      <TopBar title="Lista" />
+      <TopBar title="Lista" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={[styles.content, wide && narrowBlock]} keyboardShouldPersistTaps="handled">
         <View style={styles.statusRow}>
-          <Button title="‹ Volver" variant="secondary" onPress={() => router.back()} />
           {status === 'saving' ? <Text style={styles.hint}>Guardando...</Text> : null}
           {status === 'saved' ? <Text accessibilityRole="alert" style={styles.ok}>Guardado</Text> : null}
         </View>
@@ -158,31 +157,6 @@ export default function ListEditor() {
         <TextField label="Nombre" value={name} onChangeText={setName} onBlur={() => canEdit && void rename()} editable={canEdit} maxLength={80} />
 
         <Text style={styles.title}>Qué se muestra</Text>
-        {rows.length === 0 ? <Text style={styles.hint}>Todavía no hay nada. Agregá una imagen o un video.</Text> : null}
-        {rows.map((r, i) => (
-          <View key={`${r.media_id}:${i}`} style={styles.item}>
-            <Thumb item={r} size={56} />
-            <View style={styles.info}>
-              <Text numberOfLines={1} style={styles.itemName}>{r.original_name}</Text>
-              {r.type === 'image' && canEdit ? (
-                <View style={styles.duration}>
-                  <Stepper value={r.duration_seconds} min={3} max={60} onChange={(v) => change(rows.map((x, j) => (j === i ? { ...x, duration_seconds: v } : x)))} />
-                  <Text style={styles.hint}>segundos</Text>
-                </View>
-              ) : (
-                <Text style={styles.hint}>{contentSubtitle(r)}</Text>
-              )}
-            </View>
-            {canEdit ? (
-              <View style={styles.actions}>
-                <IconButton icon="chevron-up" label={`Subir ${r.original_name}`} disabled={i === 0} onPress={() => change(moveItem(rows, i, -1))} />
-                <IconButton icon="chevron-down" label={`Bajar ${r.original_name}`} disabled={i === rows.length - 1} onPress={() => change(moveItem(rows, i, 1))} />
-                <IconButton icon="close" label={`Quitar ${r.original_name}`} onPress={() => change(rows.filter((_, j) => j !== i))} />
-              </View>
-            ) : null}
-          </View>
-        ))}
-
         {canEdit ? (
           adding ? (
             <View style={styles.panel}>
@@ -208,6 +182,30 @@ export default function ListEditor() {
             <Button title="+ Agregar" onPress={() => setAdding(true)} fullWidth />
           )
         ) : null}
+        {rows.length === 0 ? <Text style={styles.hint}>Todavía no hay nada. Agregá una imagen o un video.</Text> : null}
+        {rows.map((r, i) => (
+          <View key={`${r.media_id}:${i}`} style={styles.item}>
+            <Thumb item={r} size={56} />
+            <View style={styles.info}>
+              <Text numberOfLines={1} style={styles.itemName}>{r.original_name}</Text>
+              {r.type === 'image' && canEdit ? (
+                <View style={styles.duration}>
+                  <Stepper value={r.duration_seconds} min={3} max={60} onChange={(v) => change(rows.map((x, j) => (j === i ? { ...x, duration_seconds: v } : x)))} />
+                  <Text style={styles.hint}>segundos</Text>
+                </View>
+              ) : (
+                <Text style={styles.hint}>{contentSubtitle(r)}</Text>
+              )}
+            </View>
+            {canEdit ? (
+              <View style={styles.actions}>
+                <IconButton icon="chevron-up" label={`Subir ${r.original_name}`} disabled={i === 0} onPress={() => change(moveItem(rows, i, -1))} />
+                <IconButton icon="chevron-down" label={`Bajar ${r.original_name}`} disabled={i === rows.length - 1} onPress={() => change(moveItem(rows, i, 1))} />
+                <IconButton icon="close" label={`Quitar ${r.original_name}`} apart onPress={() => change(rows.filter((_, j) => j !== i))} />
+              </View>
+            ) : null}
+          </View>
+        ))}
 
         <ShownOn playlistId={id} canAssign={can('screens:update')} />
 
@@ -215,7 +213,7 @@ export default function ListEditor() {
           confirmingDelete ? (
             <ConfirmPanel message="Se quita también de las pantallas donde se muestra." confirmLabel="Sí, eliminar lista" onConfirm={() => void remove()} onCancel={() => setConfirmingDelete(false)} />
           ) : (
-            <Button title="Eliminar lista" variant="secondary" onPress={() => setConfirmingDelete(true)} fullWidth />
+            <Button title="Eliminar lista" variant="ghostDanger" onPress={() => setConfirmingDelete(true)} fullWidth />
           )
         ) : null}
       </ScrollView>
@@ -223,9 +221,9 @@ export default function ListEditor() {
   );
 }
 
-function IconButton({ icon, label, disabled, onPress }: { icon: 'chevron-up' | 'chevron-down' | 'close'; label: string; disabled?: boolean; onPress: () => void }) {
+function IconButton({ icon, label, disabled, apart, onPress }: { icon: 'chevron-up' | 'chevron-down' | 'close'; label: string; disabled?: boolean; apart?: boolean; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} style={[styles.icon, disabled && styles.off]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} style={[styles.icon, apart && styles.apart, disabled && styles.off]}>
       <Ionicons name={icon} size={20} color={Colors.ink} />
     </Pressable>
   );
@@ -233,19 +231,20 @@ function IconButton({ icon, label, disabled, onPress }: { icon: 'chevron-up' | '
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: 20, gap: Spacing.md },
+  content: { padding: Layout.screenPadding, gap: Spacing.md },
   statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
-  title: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: 18, marginTop: Spacing.sm },
+  title: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: Typography.large, marginTop: Spacing.section },
   item: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
   info: { flex: 1, gap: Spacing.xs },
-  itemName: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: 14 },
+  itemName: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: Typography.body },
   duration: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', width: Layout.minTouchTarget * 2 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   icon: { width: Layout.minTouchTarget, height: Layout.minTouchTarget, alignItems: 'center', justifyContent: 'center' },
+  apart: { marginLeft: Spacing.md },
   off: { opacity: 0.3 },
   panel: { gap: Spacing.sm, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
   errorBox: { gap: Spacing.sm },
-  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
-  ok: { color: Colors.success, fontFamily: Fonts.medium, fontSize: 13 },
-  error: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: 13 },
+  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
+  ok: { color: Colors.success, fontFamily: Fonts.medium, fontSize: Typography.caption },
+  error: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: Typography.caption },
 });

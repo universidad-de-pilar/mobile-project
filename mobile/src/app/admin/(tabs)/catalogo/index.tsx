@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -9,7 +10,7 @@ import { ListRow } from '@/components/ui/mostrador/list-row';
 import { TextField } from '@/components/ui/mostrador/text-field';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
 import { narrowBlock, useWide, wideGrid } from '@/components/ui/mostrador/use-wide';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 import { createCategory, listCategories, listProducts, type Category, type Product } from '@/lib/admin-api';
 import { formatPrice } from '@/lib/format-price';
@@ -147,7 +148,7 @@ export default function CatalogTab() {
       <TopBar title="Catálogo" store={store?.name} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {data && can('products:create') ? (
-          <Button title="+ Nuevo producto" onPress={() => router.push('/admin/catalogo/nuevo')} fullWidth style={wide && narrowBlock} />
+          <Button title="+ Nuevo producto" size="sm" onPress={() => router.push('/admin/catalogo/nuevo')} fullWidth style={wide && narrowBlock} />
         ) : null}
         {data ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
@@ -160,11 +161,27 @@ export default function CatalogTab() {
         ) : null}
         {data ? (
           <View style={[styles.adding, wide && narrowBlock]}>
-            <TextField accessibilityLabel="Buscar por nombre o SKU" placeholder="Buscar por nombre o SKU" value={query} onChangeText={setQuery} autoCapitalize="none" autoCorrect={false} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+            <View style={styles.filters}>
+              <TextField
+                accessibilityLabel="Buscar por nombre o SKU"
+                placeholder="Buscar por nombre o SKU"
+                value={query}
+                onChangeText={setQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                containerStyle={styles.search}
+              />
               <Chip label="Disponibles" active={onlyAvailable} onPress={() => setOnlyAvailable((v) => !v)} />
-              <Chip label="Vista compacta" active={compact} onPress={() => setCompact((v) => !v)} />
-            </ScrollView>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Vista compacta"
+                accessibilityState={{ selected: compact }}
+                onPress={() => setCompact((v) => !v)}
+                style={[styles.viewToggle, compact && styles.viewToggleActive]}
+              >
+                <Ionicons name={compact ? 'grid-outline' : 'list-outline'} size={20} color={compact ? Colors.surface : Colors.ink} />
+              </Pressable>
+            </View>
           </View>
         ) : null}
         {adding ? (
@@ -182,18 +199,31 @@ export default function CatalogTab() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: 20, gap: Spacing.md },
+  content: { padding: Layout.screenPadding, gap: Spacing.md },
   chips: { gap: Spacing.sm },
   list: { gap: Spacing.md },
   adding: { gap: Spacing.sm },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.sm },
+  search: { flex: 1, width: 'auto', minWidth: 160 },
+  viewToggle: {
+    width: Layout.minTouchTarget,
+    height: Layout.minTouchTarget,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewToggleActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
   table: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, overflow: 'hidden' },
   dense: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: Colors.border },
   denseHeader: { backgroundColor: Colors.bg },
-  headerText: { color: Colors.muted, fontFamily: Fonts.bold, fontSize: 11, textTransform: 'uppercase' },
+  headerText: { color: Colors.muted, fontFamily: Fonts.bold, fontSize: Typography.micro, textTransform: 'uppercase' },
   denseName: { flex: 2 },
   denseSku: { flex: 1 },
   denseState: { width: 110 },
-  denseTitle: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: 13 },
-  denseMuted: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 12 },
+  denseTitle: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: Typography.caption },
+  denseMuted: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.small },
 });
