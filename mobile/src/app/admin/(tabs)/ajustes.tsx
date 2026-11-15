@@ -3,9 +3,10 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/mostrador/button';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
+import { StickyFooter } from '@/components/ui/mostrador/sticky-footer';
 import { TextField } from '@/components/ui/mostrador/text-field';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 import { getStore, updateStore, type Store } from '@/lib/admin-api';
 import { formatWhatsapp, parseWhatsapp, storeErrorMessage } from '@/lib/store-rules';
@@ -106,11 +107,7 @@ export default function SettingsTab() {
           <Text style={styles.urlLabel}>URL de autopedido (va en el QR)</Text>
           <Text selectable style={styles.url}>{url}</Text>
         </View>
-        {formError ? <Text accessibilityRole="alert" style={styles.error}>{formError}</Text> : null}
-        {saved ? <Text accessibilityRole="alert" style={styles.success}>Cambios guardados.</Text> : null}
-        {canEdit ? <Button title="Guardar" onPress={() => void save()} loading={sending} fullWidth /> : (
-          <Text style={styles.helper}>Tu usuario puede ver estos datos pero no editarlos.</Text>
-        )}
+        {canEdit ? null : <Text style={styles.helper}>Tu usuario puede ver estos datos pero no editarlos.</Text>}
       </>
     );
   }
@@ -120,20 +117,28 @@ export default function SettingsTab() {
       <TopBar title="Ajustes" store={session?.name} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {body}
-        <Button title="Cerrar sesión" variant="secondary" onPress={() => void signOut()} fullWidth />
+        <Button title="Cerrar sesión" variant="ghostDanger" onPress={() => void signOut()} fullWidth style={styles.logout} />
       </ScrollView>
+      {ready?.store && canEdit ? (
+        <StickyFooter safeArea={false}>
+          {formError ? <Text accessibilityRole="alert" style={styles.error}>{formError}</Text> : null}
+          {saved ? <Text accessibilityRole="alert" style={styles.success}>Cambios guardados.</Text> : null}
+          <Button title="Guardar" onPress={() => void save()} loading={sending} fullWidth />
+        </StickyFooter>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: 20, gap: Spacing.md, width: '100%', maxWidth: 560 },
+  content: { padding: Layout.screenPadding, gap: Spacing.md, width: '100%', maxWidth: 560 },
+  logout: { marginTop: Spacing.xxl },
   field: { gap: Spacing.sm },
-  helper: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
+  helper: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
   urlBox: { gap: Spacing.xs, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Colors.primarySoft },
-  urlLabel: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
-  url: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: 14 },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 12 },
-  success: { color: Colors.success, fontFamily: Fonts.medium, fontSize: 13 },
+  urlLabel: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
+  url: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: Typography.body },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.small },
+  success: { color: Colors.success, fontFamily: Fonts.medium, fontSize: Typography.caption },
 });

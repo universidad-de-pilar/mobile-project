@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -7,10 +8,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/mostrador/button';
 import { Chip } from '@/components/ui/mostrador/chip';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
+import { StickyFooter } from '@/components/ui/mostrador/sticky-footer';
 import { TextField } from '@/components/ui/mostrador/text-field';
 import { Toggle } from '@/components/ui/mostrador/toggle';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 import {
   createProduct,
@@ -56,6 +58,7 @@ export function ProductEditor({ id }: { id?: string }) {
 
   const ready = loaded?.key === key ? loaded : null;
   let body;
+  let form;
   if (!allowed) {
     body = <FeedbackState type="error" title="Sin permiso" message="Tu usuario no puede editar productos." />;
   } else if (!ready) {
@@ -71,15 +74,17 @@ export function ProductEditor({ id }: { id?: string }) {
       />
     );
   } else {
-    body = <Form storeId={store!.store_id} categories={ready.categories} product={ready.product} />;
+    form = <Form storeId={store!.store_id} categories={ready.categories} product={ready.product} />;
   }
 
   return (
     <View style={styles.screen}>
       <TopBar title={id ? 'Editar producto' : 'Nuevo producto'} store={store?.name} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {body}
-      </ScrollView>
+      {form ?? (
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {body}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -162,6 +167,7 @@ function Form({ storeId, categories, product }: { storeId: string; categories: C
 
   return (
     <>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" accessibilityLabel="Imagen del producto" onPress={pickImage} style={styles.image}>
         {preview ? (
           <Image source={{ uri: preview }} style={styles.preview} contentFit="cover" />
@@ -205,6 +211,7 @@ function Form({ storeId, categories, product }: { storeId: string; categories: C
             <Text numberOfLines={1} style={categoryName ? styles.selectText : styles.selectEmpty}>
               {categoryName ?? 'Elegir'}
             </Text>
+            <Ionicons name={picking ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.muted} />
           </Pressable>
           {errors.categoryId ? <Text accessibilityRole="alert" style={styles.error}>{errors.categoryId}</Text> : null}
         </View>
@@ -227,29 +234,32 @@ function Form({ storeId, categories, product }: { storeId: string; categories: C
       ) : null}
 
       <View style={styles.availability}>
-        <Text style={styles.selectText}>Disponible para pedir</Text>
+        <Text style={styles.label}>Disponible para pedir</Text>
         <Toggle label="Disponible para pedir" value={available} onValueChange={setAvailable} disabled={sending} />
       </View>
 
       <View style={styles.availability}>
-        <Text style={styles.selectText}>Sin TACC</Text>
+        <Text style={styles.label}>Sin TACC</Text>
         <Toggle label="Sin TACC" value={glutenFree} onValueChange={setGlutenFree} disabled={sending} />
       </View>
 
-      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-      <Button title={product ? 'Guardar cambios' : 'Crear producto'} onPress={submit} loading={sending} fullWidth />
+      </ScrollView>
+      <StickyFooter safeArea={false}>
+        {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+        <Button title={product ? 'Guardar cambios' : 'Crear producto'} onPress={submit} loading={sending} fullWidth />
+      </StickyFooter>
     </>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: 20, gap: Spacing.md, width: '100%', maxWidth: 560 },
+  content: { padding: Layout.screenPadding, gap: Spacing.md, width: '100%', maxWidth: 560 },
   image: {
     minHeight: 120,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: Spacing.xs,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: Colors.primary,
@@ -258,22 +268,25 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   preview: { width: '100%', height: 160 },
-  imageTitle: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: 13 },
-  imageHint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 11 },
+  imageTitle: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: Typography.caption },
+  imageHint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.micro },
   pair: { flexDirection: 'row', gap: Spacing.md },
   half: { flex: 1, gap: 6 },
-  label: { color: Colors.muted, fontFamily: Fonts.medium, fontSize: 13 },
+  label: { color: Colors.muted, fontFamily: Fonts.medium, fontSize: Typography.caption },
   select: {
     minHeight: 48,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
     paddingHorizontal: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.md,
     backgroundColor: Colors.surface,
   },
-  selectText: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: 14 },
-  selectEmpty: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 14 },
+  selectText: { flex: 1, color: Colors.ink, fontFamily: Fonts.medium, fontSize: Typography.body },
+  selectEmpty: { flex: 1, color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.body },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   availability: {
     flexDirection: 'row',
@@ -285,5 +298,5 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     backgroundColor: Colors.surface,
   },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 12 },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.small },
 });

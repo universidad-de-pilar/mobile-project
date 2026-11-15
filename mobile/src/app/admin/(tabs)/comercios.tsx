@@ -8,7 +8,7 @@ import { ListRow } from '@/components/ui/mostrador/list-row';
 import { TextField } from '@/components/ui/mostrador/text-field';
 import { Toggle } from '@/components/ui/mostrador/toggle';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
-import { Colors, Fonts, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 import { createTenant, listTenants, setTenantActive, type Tenant } from '@/lib/admin-api';
 import { createSubmitLock } from '@/lib/submit-lock';
@@ -29,6 +29,7 @@ export default function TenantsTab() {
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<{ key: number; tenants?: Tenant[] } | null>(null);
   const [form, setForm] = useState(EMPTY);
+  const [creating, setCreating] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof NewTenantForm, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -69,6 +70,7 @@ export default function TenantsTab() {
     try {
       await createTenant(input);
       setForm(EMPTY);
+      setCreating(false);
       setAttempt((a) => a + 1);
     } catch (e) {
       setError(tenantErrorMessage(e));
@@ -93,7 +95,7 @@ export default function TenantsTab() {
       />
     );
   } else if (ready.tenants.length === 0) {
-    list = <FeedbackState type="empty" title="Todavía no hay comercios" message="Creá el primero abajo." />;
+    list = <FeedbackState type="empty" title="Todavía no hay comercios" message="Creá el primero arriba." />;
   } else {
     list = (
       <Card>
@@ -120,23 +122,33 @@ export default function TenantsTab() {
     <View style={styles.screen}>
       <TopBar title="Comercios" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {creating ? (
+          <>
+            <Text accessibilityRole="header" style={styles.heading}>Nuevo comercio</Text>
+            {FIELDS.map((f) => (
+              <TextField
+                key={f.key}
+                label={f.label}
+                value={form[f.key]}
+                onChangeText={(v) => setForm((s) => ({ ...s, [f.key]: v }))}
+                error={fieldErrors[f.key]}
+                editable={!sending}
+                autoCapitalize="none"
+                keyboardType={f.key === 'ownerEmail' ? 'email-address' : 'default'}
+              />
+            ))}
+            {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+            <Button title="Crear comercio" onPress={() => void create()} loading={sending} fullWidth />
+            <Button title="Cancelar" variant="ghost" onPress={() => setCreating(false)} fullWidth />
+          </>
+        ) : (
+          <>
+            <Button title="+ Nuevo comercio" onPress={() => setCreating(true)} fullWidth />
+            {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+          </>
+        )}
         {list}
-        <Text accessibilityRole="header" style={styles.heading}>Nuevo comercio</Text>
-        {FIELDS.map((f) => (
-          <TextField
-            key={f.key}
-            label={f.label}
-            value={form[f.key]}
-            onChangeText={(v) => setForm((s) => ({ ...s, [f.key]: v }))}
-            error={fieldErrors[f.key]}
-            editable={!sending}
-            autoCapitalize="none"
-            keyboardType={f.key === 'ownerEmail' ? 'email-address' : 'default'}
-          />
-        ))}
-        {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-        <Button title="Crear comercio" onPress={() => void create()} loading={sending} fullWidth />
-        <Button title="Cerrar sesión" variant="secondary" onPress={() => void signOut()} fullWidth />
+        <Button title="Cerrar sesión" variant="ghostDanger" onPress={() => void signOut()} fullWidth style={styles.logout} />
       </ScrollView>
     </View>
   );
@@ -144,7 +156,8 @@ export default function TenantsTab() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: 20, gap: Spacing.md, width: '100%', maxWidth: 560 },
-  heading: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: 16, marginTop: Spacing.md },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 13 },
+  content: { padding: Layout.screenPadding, gap: Spacing.md, width: '100%', maxWidth: 560 },
+  heading: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: Typography.large, marginTop: Spacing.section },
+  logout: { marginTop: Spacing.xxl },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.caption },
 });

@@ -9,7 +9,7 @@ import { ListRow } from '@/components/ui/mostrador/list-row';
 import { TextField } from '@/components/ui/mostrador/text-field';
 import { Toggle } from '@/components/ui/mostrador/toggle';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
-import { Colors, Fonts, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 import {
   createEmployee,
@@ -40,6 +40,7 @@ export default function TeamTab() {
   const [form, setForm] = useState(EMPTY);
   // null = alta; con empleado = edición de ese empleado
   const [editing, setEditing] = useState<Employee | null>(null);
+  const [creating, setCreating] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof EmployeeForm, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -68,6 +69,7 @@ export default function TeamTab() {
 
   function reset() {
     setEditing(null);
+    setCreating(false);
     setForm(EMPTY);
     setFieldErrors({});
   }
@@ -166,8 +168,10 @@ export default function TeamTab() {
     <View style={styles.screen}>
       <TopBar title="Equipo" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {list}
-        {editing || canCreate ? (
+        {canCreate && !editing && !creating ? (
+          <Button title="+ Nuevo empleado" onPress={() => setCreating(true)} fullWidth />
+        ) : null}
+        {editing || (canCreate && creating) ? (
           <>
             <Text accessibilityRole="header" style={styles.heading}>
               {editing ? `Editar a ${editing.first_name}` : 'Nuevo empleado'}
@@ -210,11 +214,12 @@ export default function TeamTab() {
             {fieldErrors.storeIds ? <Text accessibilityRole="alert" style={styles.error}>{fieldErrors.storeIds}</Text> : null}
             {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
             <Button title={editing ? 'Guardar cambios' : 'Crear empleado'} onPress={() => void save()} loading={sending} fullWidth />
-            {editing ? <Button title="Cancelar" variant="secondary" onPress={reset} fullWidth /> : null}
+            <Button title="Cancelar" variant="ghost" onPress={reset} fullWidth />
           </>
         ) : error ? (
           <Text accessibilityRole="alert" style={styles.error}>{error}</Text>
         ) : null}
+        {list}
       </ScrollView>
     </View>
   );
@@ -222,9 +227,9 @@ export default function TeamTab() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: 20, gap: Spacing.md, width: '100%', maxWidth: 560 },
-  heading: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: 16, marginTop: Spacing.md },
-  label: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: 14 },
+  content: { padding: Layout.screenPadding, gap: Spacing.md, width: '100%', maxWidth: 560 },
+  heading: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: Typography.large, marginTop: Spacing.section },
+  label: { color: Colors.muted, fontFamily: Fonts.medium, fontSize: Typography.caption },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 13 },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.caption },
 });
