@@ -7,7 +7,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.0.2.2:3000",
+        "EXPO_PUBLIC_API_URL": "https://mobile-project-f5r1.onrender.com",
         "EXPO_PUBLIC_TENANT_SLUG": "local3",
         "EXPO_PUBLIC_STORE_SLUG": "centro"
       },
