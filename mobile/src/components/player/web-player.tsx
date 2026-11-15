@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PlayerStage } from '@/components/player/player-stage';
+import { useFullscreenOnGesture } from '@/components/player/use-fullscreen';
 import { usePlayer } from '@/components/player/use-player';
 import { Colors, Fonts } from '@/components/ui/mostrador/tokens';
 
@@ -16,6 +17,7 @@ export function Message({ text }: { text: string }) {
 /** `onInvalid` lets `/screen` go back to pairing when the token stops working. */
 export function WebPlayer({ token, onInvalid }: { token: string; onInvalid?: () => void }) {
   const { status, state, qrUrl, next } = usePlayer(token);
+  useFullscreenOnGesture();
 
   useEffect(() => {
     if (status === 'invalid') onInvalid?.();

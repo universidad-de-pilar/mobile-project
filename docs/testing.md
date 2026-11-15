@@ -843,6 +843,7 @@ Manual frontend (web, TC-239 a TC-243; requiere el script 005 aplicado):
 6. Cortar la red mientras el televisor espera: no se rompe y retoma el sondeo al volver.
 7. Desactivar la pantalla vinculada: el reproductor recibe 404, borra el token guardado y `/screen` vuelve al modo vinculación con un código nuevo.
 8. Usuario sin `screens:update`: no ve el campo de código, solo el enlace.
+9. Pantalla completa: en `/screen` (código o reproductor) y en `/screen/<token>`, presionar OK en el control (o cualquier tecla / un toque) pasa a pantalla completa. Tras recargar hay que volver a presionar OK (el navegador exige un gesto del usuario).
 
 Pending: supertest con base para el aislamiento por tenant, la expiración en SQL (`now()`), el `UPDATE ... RETURNING` atómico y el 403 sin `screens:update`; limitar la tasa de intentos contra `/screens/:id/pair` (TC-244).
 
