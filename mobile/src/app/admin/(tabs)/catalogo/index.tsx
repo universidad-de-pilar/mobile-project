@@ -106,7 +106,15 @@ export default function CatalogTab() {
     );
   } else {
     body = (
-      <View style={[styles.list, wide && !compact && wideGrid(320)]}>
+      <View style={compact ? styles.table : [styles.list, wide && wideGrid(320)]}>
+        {compact ? (
+          <View style={[styles.dense, styles.denseHeader]}>
+            <Text style={[styles.headerText, styles.denseName]}>Producto</Text>
+            {wide ? <Text style={[styles.headerText, styles.denseSku]}>SKU</Text> : null}
+            {wide ? <Text style={[styles.headerText, styles.denseState]}>Estado</Text> : null}
+            <Text style={styles.headerText}>Precio</Text>
+          </View>
+        ) : null}
         {products.map((p) => {
           const onPress = can('products:update') ? () => router.push(`/admin/catalogo/${p.product_id}`) : undefined;
           return compact ? (
@@ -138,6 +146,9 @@ export default function CatalogTab() {
     <View style={styles.screen}>
       <TopBar title="Catálogo" store={store?.name} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {data && can('products:create') ? (
+          <Button title="+ Nuevo producto" onPress={() => router.push('/admin/catalogo/nuevo')} fullWidth style={wide && narrowBlock} />
+        ) : null}
         {data ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
             <Chip label="Todas" active={!activeId} onPress={() => setActiveId(null)} />
@@ -164,9 +175,6 @@ export default function CatalogTab() {
           </View>
         ) : null}
         {body}
-        {data && can('products:create') ? (
-          <Button title="+ Nuevo producto" onPress={() => router.push('/admin/catalogo/nuevo')} fullWidth style={wide && narrowBlock} />
-        ) : null}
       </ScrollView>
     </View>
   );
@@ -178,7 +186,10 @@ const styles = StyleSheet.create({
   chips: { gap: Spacing.sm },
   list: { gap: Spacing.md },
   adding: { gap: Spacing.sm },
-  dense: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md },
+  table: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, overflow: 'hidden' },
+  dense: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: Colors.border },
+  denseHeader: { backgroundColor: Colors.bg },
+  headerText: { color: Colors.muted, fontFamily: Fonts.bold, fontSize: 11, textTransform: 'uppercase' },
   denseName: { flex: 2 },
   denseSku: { flex: 1 },
   denseState: { width: 110 },
