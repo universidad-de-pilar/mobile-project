@@ -6,7 +6,7 @@ export const Colors = {
   primarySoft: '#FFEDD5',
   bg: '#FAF7F2',
   surface: '#FFFFFF',
-  muted: '#78716C',
+  muted: '#6B6560',
   border: '#E7E5E4',
   success: '#16A34A',
   successSoft: '#DCFCE7',
@@ -22,6 +22,7 @@ export const Spacing = {
   lg: 16,
   xl: 24,
   xxl: 32,
+  section: 24,
 } as const;
 
 export const Radius = {
@@ -33,11 +34,17 @@ export const Radius = {
 } as const;
 
 export const Typography = {
+  micro: 11,
   small: 12,
+  caption: 13,
   body: 14,
+  bodyLarge: 15,
   regular: 16,
+  large: 18,
   subtitle: 20,
+  heading: 22,
   title: 28,
+  display: 48,
 } as const;
 
 // Values match the font names registered with useFonts in the root layout.

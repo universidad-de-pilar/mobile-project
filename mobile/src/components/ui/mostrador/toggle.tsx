@@ -16,6 +16,7 @@ export function Toggle({ value, onValueChange, label, disabled = false }: Toggle
       accessibilityLabel={label}
       accessibilityState={{ checked: value, disabled }}
       disabled={disabled}
+      hitSlop={{ top: 9, bottom: 9 }}
       onPress={() => onValueChange(!value)}
       style={[styles.track, value ? styles.on : styles.off, disabled && styles.disabled]}
     >

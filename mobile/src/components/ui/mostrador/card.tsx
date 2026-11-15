@@ -21,6 +21,5 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     gap: Spacing.md,
     width: '100%',
-    overflow: 'hidden',
   },
 });

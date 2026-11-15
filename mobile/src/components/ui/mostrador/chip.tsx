@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { Colors, Fonts, Layout, Radius, Spacing } from './tokens';
+import { useFocusRing } from './focus-ring';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from './tokens';
 
 type ChipProps = {
   label: string;
@@ -9,12 +10,14 @@ type ChipProps = {
 };
 
 export function Chip({ label, active = false, onPress }: ChipProps) {
+  const { focusProps, ringStyle } = useFocusRing();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       onPress={onPress}
-      style={[styles.chip, active && styles.active]}
+      {...focusProps}
+      style={[styles.chip, active && styles.active, ringStyle]}
     >
       <Text style={[styles.text, active && styles.activeText]}>{label}</Text>
     </Pressable>
@@ -33,6 +36,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   active: { backgroundColor: Colors.ink, borderColor: Colors.ink },
-  text: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: 14 },
+  text: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: Typography.body },
   activeText: { color: Colors.surface },
 });
