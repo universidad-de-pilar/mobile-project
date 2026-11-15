@@ -8,7 +8,7 @@ import { formatPrice } from '@/lib/format-price';
 
 import { Button } from './button';
 import { Stepper } from './stepper';
-import { Colors, Fonts, Layout, Radius, Spacing } from './tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from './tokens';
 import { useWide } from './use-wide';
 
 export type DetailProduct = {
@@ -136,11 +136,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   fill: { width: '100%', height: '100%' },
-  name: { color: Colors.ink, fontFamily: Fonts.title, fontSize: 22 },
-  description: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
-  price: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: 20, marginTop: Spacing.xs },
+  name: { color: Colors.ink, fontFamily: Fonts.title, fontSize: Typography.heading },
+  description: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.bodyLarge, lineHeight: 22 },
+  price: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: Typography.subtitle, marginTop: Spacing.xs },
   glutenFree: { width: 29, height: 32 },
-  max: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: 14 },
+  max: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: Typography.body },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',

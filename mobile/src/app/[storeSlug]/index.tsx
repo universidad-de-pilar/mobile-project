@@ -2,13 +2,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
   type ViewStyle,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StoreHeader } from '@/components/store-header';
 import { Button } from '@/components/ui/mostrador/button';
@@ -16,7 +16,8 @@ import { Chip } from '@/components/ui/mostrador/chip';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
 import { ProductCard } from '@/components/ui/mostrador/product-card';
 import { ProductDetailSheet } from '@/components/ui/mostrador/product-detail-sheet';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { StickyFooter } from '@/components/ui/mostrador/sticky-footer';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { useWide } from '@/components/ui/mostrador/use-wide';
 import { useCart } from '@/context/CartContext';
 import { ApiError, getPublicCatalog, type PublicCatalog, type PublicProduct } from '@/lib/api';
@@ -24,8 +25,6 @@ import { MAX_QUANTITY } from '@/lib/cart-rules';
 import { isTenantSuspended } from '@/lib/tenant-rules';
 import { productsForCategory, visibleCategories } from '@/lib/catalog-rules';
 import { formatPrice } from '@/lib/format-price';
-
-const PAD = 20;
 
 type Result = { key: string; catalog?: PublicCatalog; notFound?: boolean; suspended?: boolean };
 
@@ -166,12 +165,12 @@ export default function CatalogScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={['top']} style={styles.screen}>
       <StoreHeader title="¿Qué vas a pedir?" tenant={loaded?.catalog?.tenant.name} store={loaded?.catalog?.store.name} />
 
       <View style={styles.content}>{body}</View>
 
-      <View style={styles.bar}>
+      <StickyFooter>
         <Button
           title={
             itemCount === 0
@@ -179,10 +178,13 @@ export default function CatalogScreen() {
               : `Ver carrito · ${itemCount} ${itemCount === 1 ? 'producto' : 'productos'} · ${formatPrice((totalCents / 100).toFixed(2))}`
           }
           fullWidth
+          // Menos padding y fuente para que el resumen entre en una línea a 360px.
+          style={styles.cartButton}
+          textStyle={styles.cartText}
           disabled={itemCount === 0}
           onPress={() => router.push(`/${storeSlug}/cart`)}
         />
-      </View>
+      </StickyFooter>
 
       <ProductDetailSheet
         product={detail}
@@ -201,27 +203,21 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
   content: { flex: 1, minHeight: 0 },
   chips: { flexGrow: 0 },
-  chipsContent: { gap: Spacing.sm, paddingHorizontal: PAD, paddingVertical: Spacing.lg },
+  chipsContent: { gap: Spacing.sm, paddingHorizontal: Layout.screenPadding, paddingVertical: Spacing.sm },
   cap: {
-    marginHorizontal: PAD,
+    marginHorizontal: Layout.screenPadding,
     marginBottom: Spacing.sm,
     padding: Spacing.md,
     borderRadius: Radius.md,
     backgroundColor: Colors.dangerSoft,
     color: Colors.danger,
     fontFamily: Fonts.medium,
-    fontSize: 14,
+    fontSize: Typography.body,
   },
   columns: { gap: Spacing.md },
   // Fixed third of the row (minus both gaps) so a short last row keeps its column width.
   cell: { width: 'calc((100% - 24px) / 3)' } as unknown as ViewStyle,
-  list: { gap: Spacing.md, paddingHorizontal: PAD, paddingBottom: Spacing.lg },
-  bar: {
-    minHeight: 86,
-    justifyContent: 'center',
-    paddingHorizontal: PAD,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
+  list: { gap: Spacing.md, paddingHorizontal: Layout.screenPadding, paddingBottom: Spacing.lg },
+  cartButton: { paddingHorizontal: Spacing.md },
+  cartText: { fontSize: Typography.bodyLarge },
 });

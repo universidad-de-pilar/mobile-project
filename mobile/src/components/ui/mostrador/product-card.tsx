@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, Fonts, Layout, Radius } from './tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from './tokens';
 
 type ProductCardProps = {
   name: string;
@@ -48,7 +48,7 @@ export function ProductCard({
         </View>
 
         <View style={styles.info}>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text style={styles.name} numberOfLines={description ? 1 : 2}>
             {name}
           </Text>
           {description ? (
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     width: '100%',
   },
-  content: { flexDirection: 'row', gap: 14, padding: 12 },
+  content: { flexDirection: 'row', gap: 14, padding: Spacing.md },
   image: {
     width: 88,
     height: 88,
@@ -105,21 +105,23 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fill: { width: '100%', height: '100%' },
-  info: { flex: 1, gap: 4, minWidth: 0 },
-  name: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: 16 },
-  description: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 13 },
+  info: { flex: 1, gap: Spacing.xs, minWidth: 0 },
+  name: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: Typography.regular },
+  description: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.caption },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     height: ADD_SIZE,
     marginTop: 'auto',
+    // Reserva el espacio del botón absoluto para que no pise el precio.
+    paddingRight: ADD_SIZE + Spacing.sm,
   },
-  price: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: 16 },
-  glutenFree: { width: 22, height: 24, marginLeft: 8 },
+  price: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: Typography.regular },
+  glutenFree: { width: 22, height: 24, marginLeft: Spacing.sm },
   add: {
     position: 'absolute',
-    right: 12,
-    bottom: 12,
+    right: Spacing.md,
+    bottom: Spacing.md,
     width: ADD_SIZE,
     height: ADD_SIZE,
     borderRadius: Radius.pill,

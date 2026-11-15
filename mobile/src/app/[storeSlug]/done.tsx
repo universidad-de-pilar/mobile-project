@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Linking, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StoreHeader } from '@/components/store-header';
 import { Button } from '@/components/ui/mostrador/button';
-import { Colors, Fonts, Spacing } from '@/components/ui/mostrador/tokens';
+import { StickyFooter } from '@/components/ui/mostrador/sticky-footer';
+import { Colors, Fonts, Layout, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { formatPrice } from '@/lib/format-price';
 import { loadLastOrder } from '@/lib/last-order';
 import { whatsappCopy } from '@/lib/order-rules';
@@ -29,7 +31,7 @@ export default function DoneScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={['top']} style={styles.screen}>
       <StoreHeader title="¡Listo!" store={order.store.name} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.check}>
@@ -48,7 +50,7 @@ export default function DoneScreen() {
         ) : null}
       </ScrollView>
       {labels.length > 0 ? (
-        <View style={styles.bar}>
+        <StickyFooter>
           {labels.map((label, i) => (
             <Button
               key={label}
@@ -58,7 +60,7 @@ export default function DoneScreen() {
               onPress={() => open(i)}
             />
           ))}
-        </View>
+        </StickyFooter>
       ) : null}
     </SafeAreaView>
   );
@@ -66,14 +68,7 @@ export default function DoneScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { flexGrow: 1, alignItems: 'center', gap: Spacing.md, padding: 20, paddingTop: Spacing.xxl },
-  bar: {
-    gap: Spacing.sm,
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
+  content: { flexGrow: 1, alignItems: 'center', gap: Spacing.md, padding: Layout.screenPadding, paddingTop: Spacing.xxl },
   check: {
     width: 88,
     height: 88,
@@ -82,8 +77,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heading: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: 20 },
-  number: { color: Colors.primary, fontFamily: Fonts.title, fontSize: 48 },
-  message: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 15, textAlign: 'center' },
-  error: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: 14, textAlign: 'center' },
+  heading: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: Typography.subtitle },
+  number: { color: Colors.primary, fontFamily: Fonts.title, fontSize: Typography.display },
+  message: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.bodyLarge, textAlign: 'center' },
+  error: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: Typography.body, textAlign: 'center' },
 });
