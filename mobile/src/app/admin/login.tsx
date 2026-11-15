@@ -5,7 +5,7 @@ import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/mostrador/button';
 import { TextField } from '@/components/ui/mostrador/text-field';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 import { login } from '@/lib/api';
 import { loginErrorMessage, validateLogin } from '@/lib/login-rules';
@@ -84,7 +84,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { flexGrow: 1, justifyContent: 'center', padding: 28 },
+  content: { flexGrow: 1, justifyContent: 'center', padding: Layout.screenPadding },
   form: { width: '100%', maxWidth: 400, alignSelf: 'center', alignItems: 'center', gap: Spacing.sm },
   logo: {
     width: 56,
@@ -94,9 +94,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brand: { color: Colors.ink, fontFamily: Fonts.title, fontSize: 28 },
-  subtitle: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 13, marginBottom: Spacing.xl },
+  brand: { marginTop: Spacing.xl, color: Colors.ink, fontFamily: Fonts.title, fontSize: Typography.title },
+  subtitle: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.body, marginBottom: Spacing.xl },
   fields: { width: '100%', gap: Spacing.md },
-  error: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: 13 },
-  host: { marginTop: Spacing.lg, color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
+  error: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: Typography.caption },
+  host: { marginTop: Spacing.lg, color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
 });
