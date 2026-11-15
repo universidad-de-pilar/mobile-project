@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Badge } from '@/components/ui/mostrador/badge';
 import { Button } from '@/components/ui/mostrador/button';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import type { Order, OrderSummary } from '@/lib/admin-api';
 import { nextActions, orderSummary } from '@/lib/admin-order-rules';
 import { formatPrice } from '@/lib/format-price';
@@ -55,7 +55,7 @@ export function OrderCard({
           {confirmingCancel ? (
             <View style={styles.actions}>
               <Text style={styles.item}>¿Cancelar esta orden? No se puede deshacer.</Text>
-              <Button title="Sí, cancelar orden" onPress={() => onAction('cancelada')} disabled={sending} fullWidth />
+              <Button title="Sí, cancelar orden" variant="danger" onPress={() => onAction('cancelada')} disabled={sending} fullWidth />
               <Button title="No, volver" variant="secondary" onPress={() => onConfirmCancel(false)} disabled={sending} fullWidth />
             </View>
           ) : (
@@ -64,7 +64,7 @@ export function OrderCard({
                 <Button
                   key={a.to}
                   title={a.label}
-                  variant={a.to === 'cancelada' ? 'secondary' : 'primary'}
+                  variant={a.to === 'cancelada' ? 'ghostDanger' : 'primary'}
                   disabled={sending}
                   onPress={() => (a.to === 'cancelada' ? onConfirmCancel(true) : onAction(a.to))}
                   fullWidth
@@ -88,11 +88,11 @@ const styles = StyleSheet.create({
   },
   head: { padding: Spacing.md, gap: Spacing.sm },
   line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
-  title: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: 14 },
-  detail: { flexShrink: 1, color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
-  total: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: 14 },
+  title: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: Typography.regular },
+  detail: { flexShrink: 1, color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.caption },
+  total: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: Typography.regular },
   body: { padding: Spacing.md, gap: Spacing.sm, borderTopWidth: 1, borderTopColor: Colors.border },
-  item: { color: Colors.ink, fontFamily: Fonts.body, fontSize: 13 },
+  item: { color: Colors.ink, fontFamily: Fonts.body, fontSize: Typography.caption },
   actions: { gap: Spacing.sm, marginTop: Spacing.xs },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 12 },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.small },
 });

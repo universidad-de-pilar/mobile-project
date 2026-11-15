@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/mostrador/button';
 import { Chip } from '@/components/ui/mostrador/chip';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
-import { Colors, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Layout, Spacing } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 import { getOrder, listOrders, updateOrderStatus, type Order, type OrderQuery, type OrderSummary } from '@/lib/admin-api';
 import { orderErrorMessage, todayRange } from '@/lib/admin-order-rules';
@@ -181,7 +181,7 @@ export default function OrdersTab() {
           );
         })}
         {orders.length < (loaded?.total ?? 0) ? (
-          <Button title="Ver más" variant="secondary" onPress={() => void loadMore()} loading={loadingMore} fullWidth />
+          <Button title="Ver más" variant="ghost" onPress={() => void loadMore()} loading={loadingMore} fullWidth />
         ) : null}
         {rowError?.id === 'more' ? <FeedbackState type="error" title={rowError.message} /> : null}
       </View>
@@ -216,7 +216,7 @@ export default function OrdersTab() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: 20, gap: Spacing.md, width: '100%', maxWidth: 760 },
+  content: { padding: Layout.screenPadding, gap: Spacing.section, width: '100%', maxWidth: Layout.contentMaxWidth },
   chips: { gap: Spacing.sm },
   list: { gap: Spacing.md },
 });
