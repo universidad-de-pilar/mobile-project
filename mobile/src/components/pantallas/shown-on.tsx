@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Toggle } from '@/components/ui/mostrador/toggle';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 import { getSchedule, listPlaylistScreens, listScreens, saveSchedule, type PlaylistScreen, type Screen } from '@/lib/admin-api';
 import { removeAssignment, scheduleErrorMessage, setDefault, slotLabel, toInput, type ScheduleInput } from '@/lib/schedule-rules';
@@ -75,10 +75,10 @@ export function ShownOn({ playlistId, canAssign }: { playlistId: string; canAssi
 
 const styles = StyleSheet.create({
   box: { gap: Spacing.sm },
-  title: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: 18 },
+  title: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: Typography.large },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
   text: { flex: 1, gap: 2 },
-  name: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: 15 },
-  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 12 },
+  name: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: Typography.bodyLarge },
+  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.small },
 });

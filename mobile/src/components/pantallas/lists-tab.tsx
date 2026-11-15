@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/mostrador/button';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
 import { ListRow } from '@/components/ui/mostrador/list-row';
 import { TextField } from '@/components/ui/mostrador/text-field';
-import { Colors, Fonts, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { narrowBlock, useWide, wideGrid } from '@/components/ui/mostrador/use-wide';
 import { useSession } from '@/context/SessionContext';
 import { createPlaylist, listPlaylists, type Playlist } from '@/lib/admin-api';
@@ -61,6 +61,15 @@ export function ListsTab() {
 
   return (
     <>
+      {adding ? (
+        <View style={[styles.adding, wide && narrowBlock]}>
+          <TextField label="Nombre de la lista" value={name} onChangeText={setName} editable={!sending} maxLength={80} onSubmitEditing={create} />
+          {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+          <Button title="Crear lista" onPress={create} loading={sending} fullWidth />
+        </View>
+      ) : me?.permissions.includes('content:create') ? (
+        <Button title="+ Nueva lista" onPress={() => setAdding(true)} fullWidth style={wide && narrowBlock} />
+      ) : null}
       <Text style={styles.hint}>Una lista es lo que se reproduce en una pantalla: imágenes y videos en orden.</Text>
       {items.length === 0 ? (
         <FeedbackState type="empty" title="Aún no hay listas" message="Creá la primera con su nombre." />
@@ -76,15 +85,6 @@ export function ListsTab() {
           ))}
         </View>
       )}
-      {adding ? (
-        <View style={[styles.adding, wide && narrowBlock]}>
-          <TextField label="Nombre de la lista" value={name} onChangeText={setName} editable={!sending} maxLength={80} onSubmitEditing={create} />
-          {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-          <Button title="Crear lista" onPress={create} loading={sending} fullWidth />
-        </View>
-      ) : me?.permissions.includes('content:create') ? (
-        <Button title="+ Nueva lista" onPress={() => setAdding(true)} fullWidth style={wide && narrowBlock} />
-      ) : null}
     </>
   );
 }
@@ -92,6 +92,6 @@ export function ListsTab() {
 const styles = StyleSheet.create({
   list: { gap: Spacing.md },
   adding: { gap: Spacing.sm },
-  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 12 },
+  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.small },
 });

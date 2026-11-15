@@ -7,7 +7,7 @@ import { MediaTab } from '@/components/pantallas/media-tab';
 import { ScreensTab } from '@/components/pantallas/screens-tab';
 import { Chip } from '@/components/ui/mostrador/chip';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
-import { Colors, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Layout, Spacing } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 
 const TABS = ['pantallas', 'listas', 'medios'] as const;
@@ -40,6 +40,6 @@ export default function ScreensHome() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: 20, gap: Spacing.md },
-  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
+  content: { padding: Layout.screenPadding, gap: Spacing.md },
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
 });

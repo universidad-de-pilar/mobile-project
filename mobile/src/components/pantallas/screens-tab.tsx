@@ -6,7 +6,7 @@ import { Thumb } from '@/components/pantallas/thumb';
 import { Button } from '@/components/ui/mostrador/button';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
 import { TextField } from '@/components/ui/mostrador/text-field';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { narrowBlock, useWide, wideGrid } from '@/components/ui/mostrador/use-wide';
 import { useSession } from '@/context/SessionContext';
 import { createScreen, getPlaylist, getSchedule, listPlaylists, listScreens, type Playlist, type PlaylistItem, type Screen } from '@/lib/admin-api';
@@ -66,6 +66,15 @@ export function ScreensTab() {
 
   return (
     <>
+      {adding ? (
+        <View style={[styles.adding, wide && narrowBlock]}>
+          <TextField label="Nombre de la pantalla" value={newName} onChangeText={setNewName} editable={!sending} maxLength={80} onSubmitEditing={addScreen} />
+          {addError ? <Text accessibilityRole="alert" style={styles.error}>{addError}</Text> : null}
+          <Button title="Agregar pantalla" onPress={addScreen} loading={sending} fullWidth />
+        </View>
+      ) : can('screens:create') ? (
+        <Button title="+ Nueva pantalla" onPress={() => setAdding(true)} fullWidth style={wide && narrowBlock} />
+      ) : null}
       {screens.length === 0 ? (
         <FeedbackState type="empty" title="Aún no hay pantallas" message={can('screens:create') ? 'Agregá la primera con "+ Nueva pantalla".' : 'Todavía no hay pantallas en este local.'} />
       ) : (
@@ -82,15 +91,6 @@ export function ScreensTab() {
           ))}
         </View>
       )}
-      {adding ? (
-        <View style={[styles.adding, wide && narrowBlock]}>
-          <TextField label="Nombre de la pantalla" value={newName} onChangeText={setNewName} editable={!sending} maxLength={80} onSubmitEditing={addScreen} />
-          {addError ? <Text accessibilityRole="alert" style={styles.error}>{addError}</Text> : null}
-          <Button title="Agregar pantalla" onPress={addScreen} loading={sending} fullWidth />
-        </View>
-      ) : can('screens:create') ? (
-        <Button title="+ Nueva pantalla" onPress={() => setAdding(true)} fullWidth style={wide && narrowBlock} />
-      ) : null}
     </>
   );
 }
@@ -139,16 +139,16 @@ function ScreenCard({ screen, playlists, stamp, canSeeItems, onPress }: { screen
 
 const styles = StyleSheet.create({
   list: { gap: Spacing.md },
-  card: { gap: Spacing.sm, padding: Spacing.lg, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
+  card: { gap: Spacing.sm, padding: Spacing.lg, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
-  name: { flexShrink: 1, color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: 18 },
+  name: { flexShrink: 1, color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: Typography.large },
   state: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  stateText: { color: Colors.muted, fontFamily: Fonts.medium, fontSize: 12 },
+  stateText: { color: Colors.muted, fontFamily: Fonts.medium, fontSize: Typography.small },
   dot: { width: 10, height: 10, borderRadius: Radius.pill, borderWidth: 1.5, borderColor: Colors.muted },
   dotOn: { backgroundColor: Colors.success, borderColor: Colors.success },
   thumbs: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, minHeight: 48 },
-  more: { color: Colors.muted, fontFamily: Fonts.bold, fontSize: 14, marginLeft: Spacing.xs },
-  now: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: 14 },
+  more: { color: Colors.muted, fontFamily: Fonts.bold, fontSize: Typography.body, marginLeft: Spacing.xs },
+  now: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: Typography.body },
   adding: { gap: Spacing.sm },
-  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 12 },
+  error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: Typography.small },
 });

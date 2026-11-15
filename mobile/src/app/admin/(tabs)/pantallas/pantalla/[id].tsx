@@ -10,7 +10,7 @@ import { SlotSheet } from '@/components/pantallas/slot-sheet';
 import { Button } from '@/components/ui/mostrador/button';
 import { Chip } from '@/components/ui/mostrador/chip';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
-import { Colors, Fonts, Layout, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
 import { narrowBlock, useWide } from '@/components/ui/mostrador/use-wide';
 import { useSession } from '@/context/SessionContext';
@@ -93,7 +93,7 @@ export default function ScreenDetail() {
   if (failed || !schedule || !screen) {
     return (
       <View style={styles.screen}>
-        <TopBar title="Pantalla" />
+        <TopBar title="Pantalla" onBack={() => router.back()} />
         {failed ? (
           <FeedbackState type="error" title="No pudimos cargar la pantalla" message="Revisá la conexión e intentá nuevamente." actionLabel="Volver" onAction={() => router.back()} />
         ) : (
@@ -109,10 +109,9 @@ export default function ScreenDetail() {
 
   return (
     <View style={styles.screen}>
-      <TopBar title={screen.name} />
+      <TopBar title={screen.name} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={[styles.content, wide && narrowBlock]} keyboardShouldPersistTaps="handled">
         <View style={styles.statusRow}>
-          <Button title="‹ Volver" variant="secondary" onPress={() => router.back()} />
           {status === 'saving' ? <Text style={styles.hint}>Guardando...</Text> : null}
           {status === 'saved' ? <Text accessibilityRole="alert" style={styles.ok}>Guardado</Text> : null}
         </View>
@@ -169,7 +168,7 @@ export default function ScreenDetail() {
             ) : null}
           </View>
         ))}
-        {canPick ? <Button title="+ Agregar horario" variant="secondary" disabled={saving} onPress={() => setSheet({ index: null })} fullWidth /> : null}
+        {canPick ? <Button title="+ Agregar horario" variant="ghost" disabled={saving} onPress={() => setSheet({ index: null })} fullWidth /> : null}
         {canEdit && playlists.length === 0 ? <Text style={styles.hint}>Primero creá una lista en la pestaña Listas.</Text> : null}
 
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: tvOpen }} onPress={() => setTvOpen(!tvOpen)} style={styles.tvHead}>
@@ -194,20 +193,20 @@ export default function ScreenDetail() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: 20, gap: Spacing.md },
+  content: { padding: Layout.screenPadding, gap: Spacing.md },
   statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
-  title: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: 18, marginTop: Spacing.sm },
-  value: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: 15 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
+  title: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: Typography.large, marginTop: Spacing.section },
+  value: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: Typography.bodyLarge },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   slot: { gap: Spacing.sm },
   line: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
   slotText: { flex: 1, minHeight: Layout.minTouchTarget, justifyContent: 'center' },
   remove: { width: Layout.minTouchTarget, height: Layout.minTouchTarget, alignItems: 'center', justifyContent: 'center' },
   tvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: Layout.minTouchTarget },
   tv: { gap: Spacing.sm, padding: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Colors.ink },
-  tvHint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
-  tvUrl: { color: Colors.surface, fontFamily: Fonts.bold, fontSize: 14 },
-  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
-  ok: { color: Colors.success, fontFamily: Fonts.medium, fontSize: 13 },
-  error: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: 13 },
+  tvHint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
+  tvUrl: { color: Colors.surface, fontFamily: Fonts.bold, fontSize: Typography.body },
+  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
+  ok: { color: Colors.success, fontFamily: Fonts.medium, fontSize: Typography.caption },
+  error: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: Typography.caption },
 });
