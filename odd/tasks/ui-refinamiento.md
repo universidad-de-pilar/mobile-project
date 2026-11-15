@@ -32,7 +32,7 @@ Refine the UI of every admin view and of the public digital menu while keeping t
 - [ ] T4 Admin forms: sticky footer in product-editor/ajustes/equipo/comercios, separated logout, section headings, select with a chevron, login hierarchy.
 - [ ] T5 Admin catalog and orders: compact filter row (search + toggles), order-card hierarchy, primary/danger actions.
 - [ ] T6 Admin pantallas: creation buttons above the lists, back as an icon, danger styling, grouped icon-buttons.
-- [ ] T7 (optional) Remove the always-visible QR from the TV view, if it is isolated.
+- [x] T7 (optional) Remove the always-visible QR from the TV view, if it is isolated.
 
 ## Acceptance criteria
 - `tsc` and `eslint` are clean, and jest stays green.
