@@ -172,15 +172,27 @@ export default function CatalogTab() {
                 containerStyle={styles.search}
               />
               <Chip label="Disponibles" active={onlyAvailable} onPress={() => setOnlyAvailable((v) => !v)} />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Vista compacta"
-                accessibilityState={{ selected: compact }}
-                onPress={() => setCompact((v) => !v)}
-                style={[styles.viewToggle, compact && styles.viewToggleActive]}
-              >
-                <Ionicons name={compact ? 'grid-outline' : 'list-outline'} size={20} color={compact ? Colors.surface : Colors.ink} />
-              </Pressable>
+              <View style={styles.viewSwitch}>
+                {([
+                  [false, 'grid-outline', 'Vista de tarjetas'],
+                  [true, 'list-outline', 'Vista compacta'],
+                ] as const).map(([value, icon, label]) => {
+                  const selected = compact === value;
+                  return (
+                    <Pressable
+                      key={icon}
+                      accessibilityRole="button"
+                      accessibilityLabel={label}
+                      accessibilityState={{ selected }}
+                      onPress={() => setCompact(value)}
+                      hitSlop={{ top: 2, bottom: 2 }}
+                      style={[styles.viewOption, selected && styles.viewOptionActive]}
+                    >
+                      <Ionicons name={icon} size={20} color={selected ? Colors.surface : Colors.muted} />
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
           </View>
         ) : null}
@@ -205,17 +217,22 @@ const styles = StyleSheet.create({
   adding: { gap: Spacing.sm },
   filters: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.sm },
   search: { flex: 1, width: 'auto', minWidth: 160 },
-  viewToggle: {
-    width: Layout.minTouchTarget,
-    height: Layout.minTouchTarget,
+  viewSwitch: {
+    flexDirection: 'row',
+    padding: 2,
     borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
+  },
+  viewOption: {
+    width: Layout.minTouchTarget,
+    height: Layout.minTouchTarget - 4,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  viewToggleActive: { backgroundColor: Colors.ink, borderColor: Colors.ink },
+  viewOptionActive: { backgroundColor: Colors.ink },
   table: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, overflow: 'hidden' },
   dense: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: Colors.border },
   denseHeader: { backgroundColor: Colors.bg },
