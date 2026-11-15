@@ -28,7 +28,7 @@ Refine the UI of every admin view and of the public digital menu while keeping t
 ## Tasks
 - [x] T1 Design system: type scale tokens, `Spacing.section`, darker `muted`, `Button` with `size`/`danger`/`ghost` + focus ring + accessible disabled state, `StickyFooter`, touch targets (stepper, toggle, add, close), and the `TabBar` safe area.
 - [x] T2 `FeedbackState` with Ionicons + skeleton + `Button size="sm"`; consistent radii in `Card`/`ListRow`.
-- [ ] T3 Public menu: cart bar, chips spacing, price/add collision, multiline note, Subtotal/Total spacing, safe-area padding in the footers.
+- [x] T3 Public menu: cart bar, chips spacing, price/add collision, multiline note, Subtotal/Total spacing, safe-area padding in the footers.
 - [ ] T4 Admin forms: sticky footer in product-editor/ajustes/equipo/comercios, separated logout, section headings, select with a chevron, login hierarchy.
 - [ ] T5 Admin catalog and orders: compact filter row (search + toggles), order-card hierarchy, primary/danger actions.
 - [ ] T6 Admin pantallas: creation buttons above the lists, back as an icon, danger styling, grouped icon-buttons.
@@ -49,6 +49,13 @@ Refine the UI of every admin view and of the public digital menu while keeping t
 ## Route
 - Each task goes to one delegated writer (sonnet), because each touches 2+ non-trivial files (writer trigger).
 
+## Delivery
+- Strategy: `stacked-to-main` against `develop` (user's choice), with chained PRs.
+  - PR 0: `fix/catalogo-vista-compacta`, the base of this branch.
+  - Then one slice per task (T1+T2 design system, T3 menu, T4-T6 admin, T7 QR).
+- When finished: squash-merge each PR into `develop`, in order, and push `origin/develop`.
+
 ## Progress
+- T1 `c1cf2f2`, T2 `c18f414`.
 - Branch: `feat/ui-refinamiento`, created from `fix/catalogo-vista-compacta`.
 - Critique done (code only, nothing rendered).

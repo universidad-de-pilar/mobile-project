@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 
 type Props = { title: string; store?: string; tenant?: string };
 
@@ -26,14 +26,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    paddingHorizontal: 20,
+    paddingHorizontal: Layout.screenPadding,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   text: { flex: 1, gap: 2 },
-  title: { color: Colors.ink, fontFamily: Fonts.title, fontSize: 22 },
-  subtitle: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 13 },
+  title: { color: Colors.ink, fontFamily: Fonts.title, fontSize: Typography.heading },
+  subtitle: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.caption },
   icon: {
     width: 36,
     height: 36,

@@ -1,13 +1,15 @@
 import { Link, Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StoreHeader } from '@/components/store-header';
 import { Button } from '@/components/ui/mostrador/button';
 import { FeedbackState } from '@/components/ui/mostrador/feedback-state';
 import { Card } from '@/components/ui/mostrador/card';
+import { StickyFooter } from '@/components/ui/mostrador/sticky-footer';
 import { TextField } from '@/components/ui/mostrador/text-field';
-import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from '@/components/ui/mostrador/tokens';
 import { useCart } from '@/context/CartContext';
 import { ApiError, createOrder } from '@/lib/api';
 import { formatCents } from '@/lib/format-price';
@@ -63,7 +65,7 @@ export default function ConfirmScreen() {
 
   if (suspended) {
     return (
-      <SafeAreaView style={styles.screen}>
+      <SafeAreaView edges={['top']} style={styles.screen}>
         <StoreHeader title="Mantenimiento" tenant={tenantName ?? undefined} store={storeName ?? storeSlug} />
         <View style={styles.content}>
           <FeedbackState
@@ -77,7 +79,7 @@ export default function ConfirmScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={['top']} style={styles.screen}>
       <StoreHeader title="Confirmá tu pedido" tenant={tenantName ?? undefined} store={storeName ?? storeSlug} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TextField
@@ -93,11 +95,11 @@ export default function ConfirmScreen() {
           onChangeText={setNote}
           maxLength={MAX_NOTE + 1}
           multiline
-          numberOfLines={1}
+          inputStyle={styles.note}
           editable={!sending}
         />
 
-        <Card>
+        <Card style={styles.summary}>
           {lines.map((l) => (
             <View key={l.productId} style={styles.row}>
               <Text style={styles.item}>{l.quantity} × {l.name}</Text>
@@ -121,24 +123,25 @@ export default function ConfirmScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={styles.bar}>
+      <StickyFooter>
         <Button title="Confirmar pedido" fullWidth loading={sending} onPress={submit} />
-      </View>
+      </StickyFooter>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.bg },
-  content: { gap: Spacing.sm, padding: 20 },
+  content: { gap: Spacing.md, padding: Layout.screenPadding },
+  note: { minHeight: 96, textAlignVertical: 'top' },
+  summary: { marginTop: Spacing.xl - Spacing.md },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.md },
-  item: { flex: 1, color: Colors.muted, fontFamily: Fonts.body, fontSize: 15 },
-  price: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: 15 },
-  totalLabel: { color: Colors.ink, fontFamily: Fonts.title, fontSize: 18 },
-  total: { color: Colors.primary, fontFamily: Fonts.title, fontSize: 18 },
-  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 13 },
+  item: { flex: 1, color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.bodyLarge },
+  price: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: Typography.bodyLarge },
+  totalLabel: { color: Colors.ink, fontFamily: Fonts.title, fontSize: Typography.large },
+  total: { color: Colors.primary, fontFamily: Fonts.title, fontSize: Typography.large },
+  hint: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.caption },
   error: { gap: Spacing.sm, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Colors.dangerSoft },
-  errorText: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: 14 },
-  link: { color: Colors.danger, fontFamily: Fonts.bold, fontSize: 14, textDecorationLine: 'underline' },
-  bar: { padding: 20, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.surface },
+  errorText: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: Typography.body },
+  link: { color: Colors.danger, fontFamily: Fonts.bold, fontSize: Typography.body, textDecorationLine: 'underline' },
 });
