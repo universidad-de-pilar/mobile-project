@@ -27,6 +27,8 @@ async function bootstrap() {
       'http://localhost:8081',
       /^https?:\/\/[a-z0-9-]+\.localhost(:\d+)?$/,
       /^https:\/\/[a-z0-9-]+\.mostrador\.io$/,
+      // Orígenes extra por entorno (p. ej. el sitio web desplegado), separados por comas
+      ...(process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) ?? []),
     ],
     allowedHeaders: ['Authorization', 'Content-Type', 'X-Tenant-Slug', 'If-None-Match', 'X-Request-Id'],
     exposedHeaders: ['ETag', 'X-Request-Id'],
