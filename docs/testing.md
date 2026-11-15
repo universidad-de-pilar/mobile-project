@@ -1057,6 +1057,12 @@ Manual (backend corriendo, archivo `backend/http/13-employees/employees.http`):
 - Empleado: `GET /employees` y `POST /employees` responden 403.
 - Dueño: `PUT /employees/:id/stores` reemplaza los locales; un local de otro tenant da 400 `INVALID_STORES`.
 
+Filtro por locales asignados (`allowedStoreIds`, T5). Automatizado en `auth/get-me`, `stores`, `categories`, `products` y `orders-admin` (use cases con el repositorio simulado):
+- Empleado: `GET /me` y `GET /stores` devuelven solo los locales asignados; `GET /stores/:id`, `GET /categories?store_id`, `GET /products?store_id` y `GET /orders?store_id` de un local no asignado dan 404 `STORE_NOT_FOUND`.
+- Empleado: `GET /orders/:id` y `PATCH /orders/:id/status` de una orden de un local no asignado dan 404 `ORDER_NOT_FOUND` y no cambian la orden.
+- Dueño y root: sin restricción, ven todos los locales del tenant (aislamiento, seguridad).
+- Manual (pendiente, requiere BD): con un empleado asignado a un solo local de un tenant con dos locales, repetir los casos anteriores; un empleado sin locales asignados ve `stores: []`.
+
 Mobile, pestaña Equipo (`mobile/src/lib/employee-rules.test.ts`, automatizado): `validateEmployee` exige email válido, nombres de al menos 3 caracteres, contraseña de 8 o más con mayúscula, minúscula, número y especial, y al menos un local, y devuelve el cuerpo recortado; `toggleStore` agrega y quita sin mutar; `storesSummary` lista los nombres o "Sin locales"; `employeeErrorMessage` mapea `EMAIL_TAKEN`, `INVALID_STORES`, `CANNOT_DEACTIVATE_SELF`, `EMPLOYEE_NOT_EDITABLE`, `EMPLOYEE_NOT_FOUND`, 403 y sin conexión.
 
 Mobile, pestaña Equipo (manual, app web):

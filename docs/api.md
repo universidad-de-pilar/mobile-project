@@ -285,7 +285,7 @@ RF-008, HU-05. Solo el dueño (y `root`) gestiona empleados; el rol `employee` n
 ```
 
 - Respuesta 200: `Employee` con los nuevos `store_ids`. Errores: 400 `INVALID_STORES`; 403 `EMPLOYEE_NOT_EDITABLE`; 404 `EMPLOYEE_NOT_FOUND`.
-- En R2 el filtro de órdenes por `users_stores` aún no aplica (sección 12).
+- El empleado solo ve y opera los locales asignados en `users_stores` (filas y locales activos): `GET /me`, `GET /stores`, `GET /stores/:storeId`, listados de categorías, productos y órdenes (`store_id`), `GET /orders/:orderId` y `PATCH /orders/:orderId/status`. Un local no asignado responde 404 `STORE_NOT_FOUND` (una orden de un local no asignado, 404 `ORDER_NOT_FOUND`), igual que uno inexistente. Dueño y root no tienen restricción. Las rutas por id de edición o borrado quedan fuera: el empleado no tiene esos permisos.
 
 ## 5. Backoffice: categorías (`/categories`)
 
@@ -818,7 +818,7 @@ Estilo de código existente: `recurso:acción` (por ejemplo `products:create`, c
 - Roles sembrados (`roles.name`): `root`, `owner`, `employee` (en el xlsx: Root, Dueño, Empleado). `root` recibe todos los permisos (`001_schema.sql`, para que `/me` lo refleje) y además `PermissionsGuard` le permite **cualquier** permiso en cualquier tenant (administra todo). Un permiso nuevo debe otorgarse también a `root`.
 - `GET /me` y `/auth/*` no requieren permiso.
 - Un empleado que intenta editar el catálogo o el contenido recibe 403 (RF-008, HU-05).
-- En R1 el empleado ve las órdenes de todos los locales del tenant (hay un solo local); el filtro por `users_stores` es R2.
+- El empleado solo ve los locales asignados en `users_stores` (sección 4.1); dueño y root ven todos los del tenant.
 
 ## 13. Resumen
 

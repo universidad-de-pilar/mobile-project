@@ -86,6 +86,19 @@ export class PostgreTenantRepository implements ITenantRepository{
         );
         return rows.length > 0;
     }
+    async allowedStoreIds(tenantId: string, userId: string): Promise<string[] | null> {
+        const rows = await this.tenantDb.manager.query(
+            `SELECT s.store_id
+             FROM users_tenants ut
+             JOIN roles r ON r.role_id = ut.role_id AND r.name = 'employee'
+             LEFT JOIN users_stores us ON us.user_id = ut.user_id AND us.is_active = true
+             LEFT JOIN stores s ON s.store_id = us.store_id AND s.tenant_id = ut.tenant_id AND s.is_active = true
+             WHERE ut.tenant_id = $1 AND ut.user_id = $2 AND ut.is_active = true`,
+            [tenantId, userId],
+        );
+        if (rows.length === 0) return null;
+        return rows.map((r: { store_id: string | null }) => r.store_id).filter((id: string | null): id is string => id !== null);
+    }
     async findActiveStoreBySlug(tenantId: string, slug: string): Promise<{ store_id: string; name: string; slug: string } | null> {
         const rows = await this.tenantDb.manager.query(
             "SELECT store_id, name, slug FROM stores WHERE tenant_id = $1 AND slug = $2 AND is_active = true LIMIT 1",

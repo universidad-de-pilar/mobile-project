@@ -18,14 +18,14 @@ export class OrdersController {
 
   @Get()
   @RequirePermissions('orders:read')
-  list(@CurrentTenant() tenant: Tenant, @Query() query: ListOrdersQueryDto) {
-    return this.listOrders.execute(tenant.tenant_id, query);
+  list(@CurrentTenant() tenant: Tenant, @CurrentUserId() userId: string, @Query() query: ListOrdersQueryDto) {
+    return this.listOrders.execute(tenant.tenant_id, query, userId);
   }
 
   @Get(':orderId')
   @RequirePermissions('orders:read')
-  get(@CurrentTenant() tenant: Tenant, @Param('orderId', ParseUUIDPipe) orderId: string) {
-    return this.getOrder.execute(tenant.tenant_id, orderId);
+  get(@CurrentTenant() tenant: Tenant, @CurrentUserId() userId: string, @Param('orderId', ParseUUIDPipe) orderId: string) {
+    return this.getOrder.execute(tenant.tenant_id, orderId, userId);
   }
 
   @Patch(':orderId/status')

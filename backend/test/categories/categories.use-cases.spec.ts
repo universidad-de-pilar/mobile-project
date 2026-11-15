@@ -13,11 +13,12 @@ const expectCode = async (promise: Promise<unknown>, type: any, code: string) =>
 
 describe('Categories use cases', () => {
   const categoryRepository = { findAll: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() };
-  const tenantRepository = { isStoreOfTenant: jest.fn() };
+  const tenantRepository = { isStoreOfTenant: jest.fn(), allowedStoreIds: jest.fn() };
 
   beforeEach(() => {
     jest.clearAllMocks();
     tenantRepository.isStoreOfTenant.mockResolvedValue(true);
+    tenantRepository.allowedStoreIds.mockResolvedValue(null);
   });
 
   describe('ListCategoriesUseCase', () => {
@@ -26,14 +27,21 @@ describe('Categories use cases', () => {
     it('debe fallar con STORE_NOT_FOUND si el local no es del tenant', async () => {
       tenantRepository.isStoreOfTenant.mockResolvedValue(false);
 
-      await expectCode(useCase().execute('t1', 's1'), NotFoundException, 'STORE_NOT_FOUND');
+      await expectCode(useCase().execute('t1', 's1', 'u1'), NotFoundException, 'STORE_NOT_FOUND');
+      expect(categoryRepository.findAll).not.toHaveBeenCalled();
+    });
+
+    it('debe ocultar con STORE_NOT_FOUND un local no asignado al empleado', async () => {
+      tenantRepository.allowedStoreIds.mockResolvedValue(['s2']);
+
+      await expectCode(useCase().execute('t1', 's1', 'u1'), NotFoundException, 'STORE_NOT_FOUND');
       expect(categoryRepository.findAll).not.toHaveBeenCalled();
     });
 
     it('debe listar las categorias del local acotadas al tenant', async () => {
       categoryRepository.findAll.mockResolvedValue([{ name: 'Bebidas' }]);
 
-      await expect(useCase().execute('t1', 's1')).resolves.toEqual([{ name: 'Bebidas' }]);
+      await expect(useCase().execute('t1', 's1', 'u1')).resolves.toEqual([{ name: 'Bebidas' }]);
       expect(tenantRepository.isStoreOfTenant).toHaveBeenCalledWith('t1', 's1');
       expect(categoryRepository.findAll).toHaveBeenCalledWith('t1', 's1');
     });

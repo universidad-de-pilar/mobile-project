@@ -30,6 +30,7 @@ There is no user management today: `backend/src/users` has only domain + infrast
 - [x] T2 Backend: tenant-scoped employee repository (list members with stores, transactional create, update names, set membership active, replace stores validated against tenant) + use cases with TDD. Route: delegated (writer trigger, 2+ non-trivial files).
 - [x] T3 Backend: `EmployeesController`, DTOs, module wiring, `route-permissions.spec`, `docs/api.md`, `docs/testing.md`. Route: delegated (writer trigger).
 - [x] T4 Mobile: "Equipo" tab gated by `employees:read`, list/create/detail screens, `admin-api` functions, `employee-rules` with tests, `docs/testing.md`. Route: delegated (writer trigger).
+- [x] T5 Backend: employees only see assigned stores (HU-05 "unassigned store hidden"). `allowedStoreIds(tenantId, userId)` next to `isStoreOfTenant` (null = unrestricted for owner/root); applied to `GET /me` stores, `GET /stores`, `GET /stores/:id`, category/product lists, `GET /orders`, `GET /orders/:id`, `PATCH /orders/:id/status`; unassigned → 404 `STORE_NOT_FOUND`. Id-only edit/delete routes untouched (employee lacks those permissions). Mobile unchanged (uses `me.stores[0]`). Branch `feat/empleados-5-filtro-locales`, PR stacked on #88. Validated by user 2026-11-15. Route: delegated (writer trigger).
 
 ## Acceptance criteria
 - Owner can create an employee with a store; the employee logs in and only sees permitted tabs.
@@ -49,5 +50,9 @@ There is no user management today: `backend/src/users` has only domain + infrast
 
 - Manual API test on Neon (2026-11-14, user-authorized): backend local on :3010, tenant `local1` owner. 12/12 cases as expected (201 create, 409 EMAIL_TAKEN, 400 INVALID_STORES, 400 weak password, employee 403 on /employees, 409 CANNOT_DEACTIVATE_SELF, deactivated employee 403 NOT_A_MEMBER then restored, PUT stores 200/400, 404 EMPLOYEE_NOT_FOUND). Test employee deleted (1 row each in users_stores/users_tenants/users_roles/users). Not covered: EMPLOYEE_NOT_EDITABLE against another owner; mobile tab not run in a browser.
 
+- T5 done (commit f7e3e86): `allowedStoreIds(tenantId, userId)` in `ITenantRepository` + Postgres (one query: active `employee` membership joined to active `users_stores`/stores of the tenant; no membership as employee = null, unrestricted) and helper `canAccessStore` (`tenants/domain/store-access.ts`). Applied to GetMe, GET /stores, GET /stores/:id, category/product lists, GET /orders (STORE_NOT_FOUND), GET /orders/:id and PATCH /orders/:id/status (ORDER_NOT_FOUND, chosen as the natural "hidden" 404 for an id-addressed order). `StoresModule` imports `TenantsModule`. RED: 5 suites / 8 tests failed before the code; GREEN: all pass. `npx tsc --noEmit` clean; `npm test` 43 suites / 399 tests pass; `npm run build` ok. Docs: `docs/api.md` (4.1, 12), `docs/testing.md`. Server/DB not run.
+
+- T5 manual test on Neon (2026-11-15, user-authorized; temporary store B inserted in local1 and deleted after): 8/8 cases as expected (owner sees A+B; employee /me and /stores only A; B returns 404 STORE_NOT_FOUND on store detail, categories, products and orders list; order of A by id 200; after PUT stores [B] only B visible). Not covered: order of another store by id (B had no orders). Cleanup verified (employee rows and store B deleted; local1 back to 1 active store).
+
 ## Next step
-Manual test against a DB + PR delivery.
+Manual test of T5 on Neon (needs user OK) + PR #89 stacked on #88.
