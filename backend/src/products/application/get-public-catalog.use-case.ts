@@ -1,4 +1,5 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import type { Tenant } from "src/tenants/domain/tenant.entity";
 import { TENANT_REPOSITORY, type ITenantRepository } from "src/tenants/domain/tenant.repository";
 import { PRODUCT_REPOSITORY, type IProductRepository } from "../domain/product.repository";
 
@@ -16,7 +17,8 @@ export class GetPublicCatalogUseCase {
         private readonly tenantRepository: ITenantRepository,
     ){}
 
-    async execute(tenantId: string, storeSlug: string){
+    async execute(tenant: Pick<Tenant, 'tenant_id' | 'name' | 'slug'>, storeSlug: string){
+        const tenantId = tenant.tenant_id;
 
         const store = await this.tenantRepository.findActiveStoreBySlug(tenantId, storeSlug);
         if (!store){
@@ -42,6 +44,6 @@ export class GetPublicCatalogUseCase {
             });
         }
 
-        return { store, categories: [...categories.values()] };
+        return { tenant: { name: tenant.name, slug: tenant.slug }, store, categories: [...categories.values()] };
     }
 }

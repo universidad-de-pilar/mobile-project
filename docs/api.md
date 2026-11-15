@@ -671,6 +671,7 @@ Audiencia: persona que escaneó el QR. Anónimo. Tenant por Host (`local1.mostra
 
 ```json
 {
+  "tenant": { "name": "UNPILAR", "slug": "unpilar" },
   "store": { "store_id": "9d3e…", "name": "Palermo", "slug": "palermo" },
   "categories": [
     { "category_id": "3f1a…", "name": "Bebidas",
@@ -682,7 +683,7 @@ Audiencia: persona que escaneó el QR. Anónimo. Tenant por Host (`local1.mostra
 }
 ```
 
-`image_url` es `null` si no hay imagen (la web usa su imagen por defecto). Catálogo vacío: `"categories": []`.
+`tenant` es el comercio resuelto por Host; la web muestra "comercio · local" en el encabezado del menú. `image_url` es `null` si no hay imagen (la web usa su imagen por defecto). Catálogo vacío: `"categories": []`.
 - Caché (RNF-002): la respuesta 200 lleva `ETag` (hash del cuerpo) y `Cache-Control: public, max-age=60, stale-while-revalidate=300`; con `If-None-Match` igual responde 304 sin cuerpo. Un cambio del catálogo tarda hasta ~1 min en verse. Las respuestas de error (404, 503 de comercio suspendido) no llevan estos encabezados.
 - Errores: 404 `TENANT_NOT_FOUND`; 404 `STORE_NOT_FOUND` (el local no existe, está desactivado o es de otro tenant; la web muestra la página de error).
 

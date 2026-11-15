@@ -17,6 +17,7 @@ export type CatalogCategory = {
 };
 
 export type PublicCatalog = {
+  tenant: { name: string; slug: string };
   store: { store_id: string; name: string; slug: string };
   categories: CatalogCategory[];
 };
