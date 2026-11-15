@@ -30,7 +30,8 @@ export function MenuQr({ url }: { url: string }) {
   useEffect(() => {
     let active = true;
     QRCode.toString(url, { ...OPTIONS, type: 'svg' })
-      .then((markup) => active && setSvg(`data:image/svg+xml;utf8,${encodeURIComponent(markup)}`))
+      // Base64 y no utf8: react-native-web vuelve a codificar los data URI utf8 y la imagen queda ilegible.
+      .then((markup) => active && setSvg(`data:image/svg+xml;base64,${btoa(markup)}`))
       .catch(() => active && setSvg(null));
     return () => {
       active = false;
