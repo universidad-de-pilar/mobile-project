@@ -27,7 +27,7 @@ Refine the UI of every admin view and of the public digital menu while keeping t
 
 ## Tasks
 - [x] T1 Design system: type scale tokens, `Spacing.section`, darker `muted`, `Button` with `size`/`danger`/`ghost` + focus ring + accessible disabled state, `StickyFooter`, touch targets (stepper, toggle, add, close), and the `TabBar` safe area.
-- [ ] T2 `FeedbackState` with Ionicons + skeleton + `Button size="sm"`; consistent radii in `Card`/`ListRow`.
+- [x] T2 `FeedbackState` with Ionicons + skeleton + `Button size="sm"`; consistent radii in `Card`/`ListRow`.
 - [ ] T3 Public menu: cart bar, chips spacing, price/add collision, multiline note, Subtotal/Total spacing, safe-area padding in the footers.
 - [ ] T4 Admin forms: sticky footer in product-editor/ajustes/equipo/comercios, separated logout, section headings, select with a chevron, login hierarchy.
 - [ ] T5 Admin catalog and orders: compact filter row (search + toggles), order-card hierarchy, primary/danger actions.
