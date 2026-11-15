@@ -20,7 +20,7 @@ import { createSubmitLock } from '@/lib/submit-lock';
 export default function ConfirmScreen() {
   const router = useRouter();
   const { storeSlug } = useLocalSearchParams<{ storeSlug: string }>();
-  const { lines, totalCents, clearCart, storeName } = useCart();
+  const { lines, totalCents, clearCart, storeName, tenantName } = useCart();
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
@@ -64,7 +64,7 @@ export default function ConfirmScreen() {
   if (suspended) {
     return (
       <SafeAreaView style={styles.screen}>
-        <StoreHeader title="Mantenimiento" store={storeName ?? storeSlug} />
+        <StoreHeader title="Mantenimiento" tenant={tenantName ?? undefined} store={storeName ?? storeSlug} />
         <View style={styles.content}>
           <FeedbackState
             type="error"
@@ -78,7 +78,7 @@ export default function ConfirmScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StoreHeader title="Confirmá tu pedido" store={storeName ?? storeSlug} />
+      <StoreHeader title="Confirmá tu pedido" tenant={tenantName ?? undefined} store={storeName ?? storeSlug} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TextField
           label="Tu nombre"

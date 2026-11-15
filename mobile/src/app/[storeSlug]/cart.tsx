@@ -14,12 +14,12 @@ import { formatCents } from '@/lib/format-price';
 export default function CartScreen() {
   const router = useRouter();
   const { storeSlug } = useLocalSearchParams<{ storeSlug: string }>();
-  const { lines, totalCents, setQuantity, storeName } = useCart();
+  const { lines, totalCents, setQuantity, storeName, tenantName } = useCart();
   const toCatalog = () => router.replace(`/${storeSlug}`);
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StoreHeader title="Tu pedido" store={storeName ?? storeSlug} />
+      <StoreHeader title="Tu pedido" tenant={tenantName ?? undefined} store={storeName ?? storeSlug} />
 
       {lines.length === 0 ? (
         <View style={styles.empty}>

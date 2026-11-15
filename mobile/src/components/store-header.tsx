@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
 
-type Props = { title: string; store?: string };
+type Props = { title: string; store?: string; tenant?: string };
 
-export function StoreHeader({ title, store }: Props) {
-  const host = Platform.OS === 'web' ? window.location.hostname : '';
-  const subtitle = [store, host].filter(Boolean).join(' · ');
+export function StoreHeader({ title, store, tenant }: Props) {
+  const subtitle = [tenant, store].filter(Boolean).join(' · ');
   return (
     <View style={styles.header}>
       <View style={styles.text}>

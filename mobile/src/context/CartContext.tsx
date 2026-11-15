@@ -28,6 +28,9 @@ type CartContextValue = {
   /** Real store name once the layout loaded it; null until then. */
   storeName: string | null;
   setStoreName: (name: string | null) => void;
+  /** Business name; null until the layout loaded it. */
+  tenantName: string | null;
+  setTenantName: (name: string | null) => void;
   /** Scopes the cart to a store and restores its saved lines. Call from the store route. */
   bindStore: (storeSlug: string) => void;
   /** Returns false when the 50-product cap rejected the product. */
@@ -63,6 +66,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [lines, setLines] = useState<CartLine[]>([]);
   const [storeName, setStoreName] = useState<string | null>(null);
+  const [tenantName, setTenantName] = useState<string | null>(null);
   const boundSlug = useRef<string | null>(null);
 
   useEffect(() => {
@@ -74,6 +78,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     boundSlug.current = slug;
     setStoreSlug(slug);
     setStoreName(null);
+    setTenantName(null);
     setLines(storage.load(slug));
   }, []);
 
@@ -93,13 +98,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       itemCount: lines.reduce((sum, l) => sum + l.quantity, 0),
       storeName,
       setStoreName,
+      tenantName,
+      setTenantName,
       bindStore,
       addProduct,
       setQuantity: (id, q) => setLines((cur) => changeQuantity(cur, id, q)),
       removeItem: (id) => setLines((cur) => removeLine(cur, id)),
       clearCart: () => setLines([]),
     }),
-    [lines, storeName, bindStore, addProduct],
+    [lines, storeName, tenantName, bindStore, addProduct],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

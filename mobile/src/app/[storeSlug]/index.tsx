@@ -165,7 +165,7 @@ export default function CatalogScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StoreHeader title="¿Qué vas a pedir?" store={loaded?.catalog?.store.name} />
+      <StoreHeader title="¿Qué vas a pedir?" tenant={loaded?.catalog?.tenant.name} store={loaded?.catalog?.store.name} />
 
       <View style={styles.content}>{body}</View>
 

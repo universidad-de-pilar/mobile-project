@@ -21,7 +21,7 @@ export class PublicCatalogController {
     @Headers('if-none-match') ifNoneMatch: string | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const catalog = await this.getPublicCatalog.execute(tenant.tenant_id, storeSlug);
+    const catalog = await this.getPublicCatalog.execute(tenant, storeSlug);
     // Headers are set only after success, so error responses (404, 503) are never cached.
     const etag = `"${createHash('sha1').update(JSON.stringify(catalog)).digest('hex')}"`;
     res.setHeader('ETag', etag);
