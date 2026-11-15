@@ -38,3 +38,5 @@ Requested by the user: celiac customers need to spot gluten-free products, and t
   - Checks: backend jest 43 suites / 407 tests pass, `tsc --noEmit -p .` ok; mobile jest 20 suites / 231 tests pass, `tsc --noEmit` ok. RED observed first in backend (9 failing) and mobile (3 failing).
   - Badge uses the official `mobile/assets/images/frontend/sin-tacc.png` (card 22x24, sheet 29x32).
   - Script `003_products_gluten_free_sku.sql` not run against any DB.
+- 003 applied in production by the user; PR #98 merged; catalog verified (200, `gluten_free` present on 15 products).
+- T2 (follow-up): every product has a SKU (verified via root API on all active stores, 2026-11-15). `004_products_sku_not_null.sql` sets `sku NOT NULL`, failing safely if any product still lacks one. Route: inline (one mechanical file).
