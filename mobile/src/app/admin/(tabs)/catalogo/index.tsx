@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/mostrador/button';
 import { Chip } from '@/components/ui/mostrador/chip';
@@ -9,11 +9,11 @@ import { ListRow } from '@/components/ui/mostrador/list-row';
 import { TextField } from '@/components/ui/mostrador/text-field';
 import { TopBar } from '@/components/ui/mostrador/top-bar';
 import { narrowBlock, useWide, wideGrid } from '@/components/ui/mostrador/use-wide';
-import { Colors, Fonts, Spacing } from '@/components/ui/mostrador/tokens';
+import { Colors, Fonts, Radius, Spacing } from '@/components/ui/mostrador/tokens';
 import { useSession } from '@/context/SessionContext';
 import { createCategory, listCategories, listProducts, type Category, type Product } from '@/lib/admin-api';
 import { formatPrice } from '@/lib/format-price';
-import { categoryErrorMessage } from '@/lib/product-rules';
+import { categoryErrorMessage, filterAdminProducts } from '@/lib/product-rules';
 import { createSubmitLock } from '@/lib/submit-lock';
 
 type Result = { key: string; data?: { categories: Category[]; products: Product[] } };
@@ -32,6 +32,9 @@ export default function CatalogTab() {
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<Result | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [compact, setCompact] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
@@ -75,7 +78,8 @@ export default function CatalogTab() {
 
   const loaded = result?.key === key ? result : null;
   const data = loaded?.data;
-  const products = data?.products.filter((p) => !activeId || p.category_id === activeId) ?? [];
+  const products = data ? filterAdminProducts(data.products, { categoryId: activeId, query, onlyAvailable }) : [];
+  const filtering = Boolean(query.trim()) || onlyAvailable;
 
   let body;
   if (!loaded) {
@@ -90,6 +94,8 @@ export default function CatalogTab() {
         onAction={() => setAttempt((a) => a + 1)}
       />
     );
+  } else if (products.length === 0 && filtering) {
+    body = <FeedbackState type="empty" title="Sin resultados" message="Ningún producto coincide con la búsqueda o los filtros." />;
   } else if (products.length === 0) {
     body = (
       <FeedbackState
@@ -100,17 +106,30 @@ export default function CatalogTab() {
     );
   } else {
     body = (
-      <View style={[styles.list, wide && wideGrid(320)]}>
-        {products.map((p) => (
+      <View style={[styles.list, wide && !compact && wideGrid(320)]}>
+        {products.map((p) => {
+          const onPress = can('products:update') ? () => router.push(`/admin/catalogo/${p.product_id}`) : undefined;
+          return compact ? (
+            <Pressable key={p.product_id} accessibilityRole={onPress ? 'button' : undefined} disabled={!onPress} onPress={onPress} style={styles.dense}>
+              <View style={styles.denseName}>
+                <Text numberOfLines={1} style={styles.denseTitle}>{p.name}</Text>
+                {!wide && p.sku ? <Text numberOfLines={1} style={styles.denseMuted}>{p.sku}</Text> : null}
+              </View>
+              {wide ? <Text numberOfLines={1} style={[styles.denseMuted, styles.denseSku]}>{p.sku ?? '—'}</Text> : null}
+              {wide ? <Text style={[styles.denseMuted, styles.denseState]}>{p.is_available ? 'Disponible' : 'No disponible'}</Text> : null}
+              <Text style={styles.denseTitle}>{formatPrice(p.price)}</Text>
+            </Pressable>
+          ) : (
           <ListRow
             key={p.product_id}
             title={p.name}
-            detail={p.is_available ? 'Disponible' : 'No disponible'}
+            detail={[p.sku, p.is_available ? 'Disponible' : 'No disponible'].filter(Boolean).join(' · ')}
             value={formatPrice(p.price)}
             image={p.image_url}
-            onPress={can('products:update') ? () => router.push(`/admin/catalogo/${p.product_id}`) : undefined}
+            onPress={onPress}
           />
-        ))}
+          );
+        })}
       </View>
     );
   }
@@ -127,6 +146,15 @@ export default function CatalogTab() {
             ))}
             {can('categories:create') ? <Chip label="+ Categoría" onPress={() => setAdding((v) => !v)} /> : null}
           </ScrollView>
+        ) : null}
+        {data ? (
+          <View style={[styles.adding, wide && narrowBlock]}>
+            <TextField accessibilityLabel="Buscar por nombre o SKU" placeholder="Buscar por nombre o SKU" value={query} onChangeText={setQuery} autoCapitalize="none" autoCorrect={false} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              <Chip label="Disponibles" active={onlyAvailable} onPress={() => setOnlyAvailable((v) => !v)} />
+              <Chip label="Vista compacta" active={compact} onPress={() => setCompact((v) => !v)} />
+            </ScrollView>
+          </View>
         ) : null}
         {adding ? (
           <View style={[styles.adding, wide && narrowBlock]}>
@@ -150,5 +178,11 @@ const styles = StyleSheet.create({
   chips: { gap: Spacing.sm },
   list: { gap: Spacing.md },
   adding: { gap: Spacing.sm },
+  dense: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md },
+  denseName: { flex: 2 },
+  denseSku: { flex: 1 },
+  denseState: { width: 110 },
+  denseTitle: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: 13 },
+  denseMuted: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
   error: { color: Colors.danger, fontFamily: Fonts.body, fontSize: 12 },
 });

@@ -1,3 +1,4 @@
+import type { Product } from '@/lib/admin-api';
 import { ApiError } from '@/lib/api';
 
 const WHOLE = String.raw`(\d{1,3}(?:\.\d{3})+|\d+)`;
@@ -83,4 +84,19 @@ export function categoryErrorMessage(error: unknown): string {
     if (error.status === 0) return OFFLINE;
   }
   return 'No se pudo crear la categoría.';
+}
+
+const fold = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+
+export function filterAdminProducts(
+  products: Product[],
+  { categoryId, query, onlyAvailable }: { categoryId: string | null; query: string; onlyAvailable: boolean },
+): Product[] {
+  const q = fold(query.trim());
+  return products.filter(
+    (p) =>
+      (!categoryId || p.category_id === categoryId) &&
+      (!onlyAvailable || p.is_available) &&
+      (!q || fold(p.name).includes(q) || fold(p.sku ?? '').includes(q)),
+  );
 }

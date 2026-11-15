@@ -1,7 +1,9 @@
 import { ApiError } from './api';
+import type { Product } from './admin-api';
 import {
   categoryErrorMessage,
   checkImage,
+  filterAdminProducts,
   parsePrice,
   priceToInput,
   productErrorMessage,
@@ -97,5 +99,38 @@ describe('server error messages', () => {
   it('maps category codes', () => {
     expect(categoryErrorMessage(new ApiError(409, 'CATEGORY_NAME_TAKEN', 'x'))).toBe('Ya existe una categoría con ese nombre.');
     expect(categoryErrorMessage(new Error('x'))).toBe('No se pudo crear la categoría.');
+  });
+});
+
+describe('filterAdminProducts', () => {
+  const make = (id: string, over: Partial<Product>): Product => ({
+    product_id: id, category_id: 'c1', name: id, description: null, price: '1.00',
+    image_url: null, is_available: true, sku: null, gluten_free: false, ...over,
+  });
+  const list = [
+    make('Café', { sku: 'CAF-01' }),
+    make('Medialuna', { category_id: 'c2', sku: 'MED-02', is_available: false }),
+    make('Tostado', { category_id: 'c2' }),
+  ];
+  const all: { categoryId: string | null; query: string; onlyAvailable: boolean } = { categoryId: null, query: '', onlyAvailable: false };
+  const names = (o: Partial<typeof all>) => filterAdminProducts(list, { ...all, ...o }).map((p) => p.name);
+
+  it('returns everything with no filters or a blank query', () => {
+    expect(names({})).toHaveLength(3);
+    expect(names({ query: '   ' })).toHaveLength(3);
+  });
+  it('filters by category', () => expect(names({ categoryId: 'c2' })).toEqual(['Medialuna', 'Tostado']));
+  it('matches name, ignoring case and accents', () => {
+    expect(names({ query: 'CAFE' })).toEqual(['Café']);
+    expect(names({ query: ' médialuna ' })).toEqual(['Medialuna']);
+  });
+  it('matches SKU and tolerates null SKU', () => {
+    expect(names({ query: 'med-02' })).toEqual(['Medialuna']);
+    expect(names({ query: 'zzz' })).toEqual([]);
+  });
+  it('filters only available', () => expect(names({ onlyAvailable: true })).toEqual(['Café', 'Tostado']));
+  it('combines filters', () => {
+    expect(names({ categoryId: 'c2', onlyAvailable: true, query: 'tost' })).toEqual(['Tostado']);
+    expect(names({ categoryId: 'c1', query: 'tost' })).toEqual([]);
   });
 });

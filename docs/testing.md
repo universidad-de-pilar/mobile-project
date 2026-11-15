@@ -950,6 +950,8 @@ Manual (backend running with the dev seed, owner token of `local1`):
 - `DELETE` returns 204; a second `DELETE` returns 404; product ids of another tenant: 404.
 - 201st product in a store: 422 `PRODUCT_LIMIT_REACHED`.
 - Employee token: 403 on POST, PATCH and DELETE.
+- Admin catalog filters, automated (`mobile/src/lib/product-rules.test.ts`, `filterAdminProducts`): category, name match, SKU match, null SKU, case and accent insensitive, trimmed and blank query (no filter), `onlyAvailable`, combined filters.
+- Admin catalog filters, manual (mobile admin, Catálogo tab): typing in "Buscar por nombre o SKU" narrows the list by name or SKU ("cafe" finds "Café"); the "Disponibles" chip hides unavailable products and combines with category and search; "Vista compacta" switches to dense rows (name, price; SKU and Disponible/No disponible on wide screens) and back, rows still open the editor with `products:update`; a search or filter with no matches shows "Sin resultados", while an empty category still shows "No hay productos".
 - Supertest cases (TC-030, TC-038) stay pending (no e2e harness with a test DB yet); NUMERIC to string formatting and the count-then-insert limit race are only verified manually.
 
 ### Public catalog (#51, RF-013/RF-014)
