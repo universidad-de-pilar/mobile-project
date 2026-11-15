@@ -1044,6 +1044,21 @@ Manual (backend corriendo, base con `db:apply` sin la semilla de desarrollo, `BA
 
 Pending: supertest con base para la concurrencia del primer registro y el alta transaccional (TC-001, TC-003, TC-129).
 
+### Gestión de empleados (R2, RF-008, HU-05)
+
+Automated (`backend/test`):
+- `employees/employees.use-cases.spec.ts` (T2): alta (email repetido `EMAIL_TAKEN`, locales vacíos o de otro tenant `INVALID_STORES`, contraseña con hash), edición (`EMPLOYEE_NOT_FOUND`, `EMPLOYEE_NOT_EDITABLE`, `CANNOT_DEACTIVATE_SELF`) y reemplazo de locales validado contra el tenant.
+- `roles/route-permissions.spec.ts`: `EmployeesController` exige `employees:*` en todas sus rutas y el empleado no tiene ninguno, por lo que recibe 403 en `/employees` (seguridad).
+
+Manual (backend corriendo, archivo `backend/http/13-employees/employees.http`):
+- Dueño: `POST /employees` con un local del tenant devuelve 201; el empleado inicia sesión y solo ve las pestañas que su rol permite. `GET /employees` lo lista con `store_ids`.
+- Dueño: `POST /employees` con un email existente da 409 `EMAIL_TAKEN`; con `store_ids` vacío o de otro tenant, 400 `INVALID_STORES` (aislamiento entre tenants); contraseña débil o nombre de menos de 3 caracteres, 400.
+- Dueño: `PATCH /employees/:id` con `is_active: false` devuelve 200 y la siguiente solicitud del empleado (mismo token) es bloqueada por `MembershipGuard`; con `is_active: true` recupera el acceso. Sobre sí mismo da 409 `CANNOT_DEACTIVATE_SELF`; sobre el dueño, 403 `EMPLOYEE_NOT_EDITABLE`; uuid inexistente, 404.
+- Empleado: `GET /employees` y `POST /employees` responden 403.
+- Dueño: `PUT /employees/:id/stores` reemplaza los locales; un local de otro tenant da 400 `INVALID_STORES`.
+
+Pending: supertest con base para los casos anteriores (el repositorio ejecuta SQL y no se probó contra una base en esta etapa); no funcionales de volumen (listado con muchos empleados) y bloqueo del token del empleado desactivado bajo carga (k6).
+
 ### Comercios suspendidos (R2, RF-035)
 
 Automated (`backend/test`):
