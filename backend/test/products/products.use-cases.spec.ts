@@ -92,19 +92,26 @@ describe('Products use cases', () => {
   });
 
   describe('GetProductUseCase', () => {
-    const useCase = () => new GetProductUseCase(productRepository as any);
+    const useCase = () => new GetProductUseCase(productRepository as any, tenantRepository as any);
 
     it('debe fallar con PRODUCT_NOT_FOUND si no existe o es de otro tenant', async () => {
       productRepository.findOne.mockResolvedValue(null);
 
-      await expectCode(useCase().execute('t1', 'p1'), NotFoundException, 'PRODUCT_NOT_FOUND');
+      await expectCode(useCase().execute('t1', 'p1', 'u1'), NotFoundException, 'PRODUCT_NOT_FOUND');
       expect(productRepository.findOne).toHaveBeenCalledWith('t1', 'p1');
     });
 
     it('debe devolver el producto mapeado', async () => {
       productRepository.findOne.mockResolvedValue(row());
 
-      await expect(useCase().execute('t1', 'p1')).resolves.toMatchObject({ product_id: 'p1', image_url: null });
+      await expect(useCase().execute('t1', 'p1', 'u1')).resolves.toMatchObject({ product_id: 'p1', image_url: null });
+    });
+
+    it('debe ocultar como PRODUCT_NOT_FOUND un producto de un local no asignado al empleado', async () => {
+      productRepository.findOne.mockResolvedValue(row({ store_id: 's1' }));
+      tenantRepository.allowedStoreIds.mockResolvedValue(['s2']);
+
+      await expectCode(useCase().execute('t1', 'p1', 'u1'), NotFoundException, 'PRODUCT_NOT_FOUND');
     });
   });
 
