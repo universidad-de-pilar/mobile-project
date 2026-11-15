@@ -14,7 +14,7 @@ const MEMBERS_SQL = `
     JOIN users u ON u.user_id = ut.user_id
     JOIN roles r ON r.role_id = ut.role_id
     LEFT JOIN users_stores us ON us.user_id = u.user_id AND us.is_active = true
-    LEFT JOIN stores s ON s.store_id = us.store_id AND s.tenant_id = ut.tenant_id
+    LEFT JOIN stores s ON s.store_id = us.store_id AND s.tenant_id = ut.tenant_id AND s.is_active = true
     WHERE ut.tenant_id = $1 AND ($2::uuid IS NULL OR u.user_id = $2::uuid)
     GROUP BY u.user_id, r.name, ut.is_active
     ORDER BY u.first_name, u.last_name, u.user_id`;
