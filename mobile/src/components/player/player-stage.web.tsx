@@ -1,9 +1,8 @@
-import QRCode from 'qrcode';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 
 import { Colors, Fonts, Radius } from '@/components/ui/mostrador/tokens';
 import { resolveImageUrl } from '@/lib/api';
-import { clampIndex, itemTimeoutMs, nextIndex, qrLabel, type PlaylistItem } from '@/lib/playlist-rules';
+import { clampIndex, itemTimeoutMs, nextIndex, type PlaylistItem } from '@/lib/playlist-rules';
 
 import type { PlayerStageProps } from './player-stage';
 
@@ -38,46 +37,6 @@ function Preload({ item }: { item: PlaylistItem | undefined }) {
   );
 }
 
-function Qr({ url }: { url: string }) {
-  const [svg, setSvg] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    // Level Q and the standard 4-module quiet zone, so it scans from a distance.
-    QRCode.toString(url, { type: 'svg', errorCorrectionLevel: 'Q', margin: 4 })
-      .then((markup) => active && setSvg(`data:image/svg+xml;utf8,${encodeURIComponent(markup)}`))
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [url]);
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        right: '3.75vw',
-        bottom: '6.7vh',
-        padding: '1.4vh 1.4vh 1.8vh',
-        background: Colors.surface,
-        borderRadius: '3vh',
-        textAlign: 'center',
-        fontFamily: Fonts.body,
-        color: Colors.ink,
-      }}
-    >
-      {/* Side is 28% of the height, above the 8% the requirements ask for. */}
-      {svg ? (
-        <img src={svg} alt="Código QR" style={{ display: 'block', width: '28vh', height: '28vh' }} />
-      ) : (
-        <div style={{ width: '28vh', height: '28vh' }} />
-      )}
-      <div style={{ fontFamily: Fonts.bold, fontSize: '3vh', marginTop: '0.4vh' }}>Escaneá y pedí</div>
-      <div style={{ color: Colors.muted, fontSize: '1.9vh', marginTop: '0.4vh' }}>{qrLabel(url)}</div>
-    </div>
-  );
-}
-
 function Progress({ count, active }: { count: number; active: number }) {
   if (count < 2) return null;
   return (
@@ -98,7 +57,7 @@ function Progress({ count, active }: { count: number; active: number }) {
   );
 }
 
-export function PlayerStage({ items, storeName, index, cycle, qrUrl, onDone }: PlayerStageProps) {
+export function PlayerStage({ items, storeName, index, cycle, onDone }: PlayerStageProps) {
   const active = clampIndex(index, items.length);
   const item = items[active];
 
@@ -134,7 +93,6 @@ export function PlayerStage({ items, storeName, index, cycle, qrUrl, onDone }: P
       )}
       <Preload item={items[nextIndex(active, items.length)]} />
       <Progress count={items.length} active={active} />
-      {qrUrl ? <Qr url={qrUrl} /> : null}
     </div>
   );
 }
