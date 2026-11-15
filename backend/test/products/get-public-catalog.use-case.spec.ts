@@ -3,7 +3,7 @@ import { GetPublicCatalogUseCase } from 'src/products/application/get-public-cat
 
 const line = (extra: object = {}) => ({
   category_id: 'c1', category_name: 'Bebidas', product_id: 'p1', name: 'Agua', description: null,
-  price: '1500.00', image_path: null, ...extra,
+  price: '1500.00', image_path: null, gluten_free: false, ...extra,
 });
 
 describe('GetPublicCatalogUseCase', () => {
@@ -57,16 +57,16 @@ describe('GetPublicCatalogUseCase', () => {
   it('debe exponer solo la forma publica del producto con image_url', async () => {
     productRepository.findCatalog.mockResolvedValue([
       line({ description: 'Sin gas', image_path: 'c1/products/a.webp' }),
-      line({ product_id: 'p2', name: 'Soda' }),
+      line({ product_id: 'p2', name: 'Soda', gluten_free: true }),
     ]);
 
     const [{ products }] = (await useCase.execute(tenant, 'palermo')).categories;
 
     expect(products[0]).toEqual({
-      product_id: 'p1', name: 'Agua', description: 'Sin gas', price: '1500.00', image_url: '/media/c1/products/a.webp',
+      product_id: 'p1', name: 'Agua', description: 'Sin gas', price: '1500.00', image_url: '/media/c1/products/a.webp', gluten_free: false,
     });
     expect(products[1]).toEqual({
-      product_id: 'p2', name: 'Soda', description: null, price: '1500.00', image_url: null,
+      product_id: 'p2', name: 'Soda', description: null, price: '1500.00', image_url: null, gluten_free: true,
     });
   });
 });

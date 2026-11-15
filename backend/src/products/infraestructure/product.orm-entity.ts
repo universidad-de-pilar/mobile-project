@@ -29,6 +29,12 @@ export class ProductOrmEntity {
     @Column({type: 'boolean', default: true})
     is_available: boolean;
 
+    @Column({type: 'varchar', length: 64, nullable: true})
+    sku: string | null;
+
+    @Column({type: 'boolean', default: false})
+    gluten_free: boolean;
+
     @Column({type: 'int', default: 0})
     sort_order: number;
 

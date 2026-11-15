@@ -52,6 +52,15 @@ export class CreateProductDto {
     @IsOptional()
     @IsInt()
     sort_order?: number;
+
+    @Transform(trim)
+    @IsString()
+    @Length(1, 64)
+    sku: string;
+
+    @IsOptional()
+    @IsBoolean()
+    gluten_free?: boolean;
 }
 
 export class UpdateProductDto {
@@ -81,4 +90,14 @@ export class UpdateProductDto {
     @IsDefinedIfSent()
     @IsInt()
     sort_order?: number;
+
+    @IsDefinedIfSent()
+    @Transform(trim)
+    @IsString()
+    @Length(1, 64)
+    sku?: string;
+
+    @IsDefinedIfSent()
+    @IsBoolean()
+    gluten_free?: boolean;
 }

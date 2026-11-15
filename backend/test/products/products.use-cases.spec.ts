@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { ListProductsQueryDto } from 'src/products/api/dto/product.dto';
 import { CreateProductUseCase } from 'src/products/application/create-product.use-case';
@@ -16,17 +16,17 @@ const expectCode = async (promise: Promise<unknown>, type: any, code?: string) =
 
 const row = (extra: object = {}) => ({
   product_id: 'p1', store_id: 's1', category_id: 'c1', name: 'Agua', description: null,
-  price: '1500.00', image_path: null, is_available: true, sort_order: 0,
+  price: '1500.00', image_path: null, is_available: true, sort_order: 0, sku: 'AG-1', gluten_free: false,
   created_at: new Date(), updated_at: new Date(), ...extra,
 });
 
 describe('Products use cases', () => {
   const productRepository = {
-    findAll: jest.fn(), findOne: jest.fn(), countByStore: jest.fn(), isCategoryOfStore: jest.fn(),
+    findAll: jest.fn(), findOne: jest.fn(), countByStore: jest.fn(), isCategoryOfStore: jest.fn(), skuTaken: jest.fn(),
     create: jest.fn(), update: jest.fn(), delete: jest.fn(),
   };
   const tenantRepository = { isStoreOfTenant: jest.fn(), allowedStoreIds: jest.fn() };
-  const input = { store_id: 's1', category_id: 'c1', name: 'Agua', price: '1500.00' };
+  const input = { store_id: 's1', category_id: 'c1', name: 'Agua', price: '1500.00', sku: 'AG-1' };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -35,6 +35,8 @@ describe('Products use cases', () => {
     productRepository.isCategoryOfStore.mockResolvedValue(true);
     productRepository.countByStore.mockResolvedValue(0);
     productRepository.create.mockResolvedValue(row());
+    productRepository.skuTaken.mockResolvedValue(false);
+    productRepository.findOne.mockResolvedValue(row());
   });
 
   describe('toProductResponse', () => {
@@ -145,12 +147,26 @@ describe('Products use cases', () => {
     });
 
     it('debe aplicar defaults: disponible, sort_order 0, descripcion null y nombre recortado', async () => {
-      await useCase().execute('t1', { ...input, name: '  Agua  ' });
+      await useCase().execute('t1', { ...input, name: '  Agua  ', sku: ' AG-1 ' });
 
       expect(productRepository.create).toHaveBeenCalledWith('t1', {
         store_id: 's1', category_id: 'c1', name: 'Agua', description: null,
-        price: '1500.00', is_available: true, sort_order: 0,
+        price: '1500.00', is_available: true, sort_order: 0, sku: 'AG-1', gluten_free: false,
       });
+      expect(productRepository.skuTaken).toHaveBeenCalledWith('t1', 'AG-1');
+    });
+
+    it('debe fallar con SKU_ALREADY_EXISTS (409) si el SKU ya existe en el tenant', async () => {
+      productRepository.skuTaken.mockResolvedValue(true);
+
+      await expectCode(useCase().execute('t1', input), ConflictException, 'SKU_ALREADY_EXISTS');
+      expect(productRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('debe guardar gluten_free cuando se envia', async () => {
+      await useCase().execute('t1', { ...input, gluten_free: true });
+
+      expect(productRepository.create).toHaveBeenCalledWith('t1', expect.objectContaining({ gluten_free: true }));
     });
 
     it('debe fallar con PRODUCT_LIMIT_REACHED al llegar a 200 productos', async () => {
@@ -188,6 +204,30 @@ describe('Products use cases', () => {
       expect(productRepository.update).toHaveBeenCalledWith('t1', 'p1', { name: 'Soda', is_available: false });
       expect(Object.keys(productRepository.update.mock.calls[0][2])).toEqual(['name', 'is_available']);
       expect(result.is_available).toBe(false);
+    });
+
+    it('debe fallar con SKU_REQUIRED si el producto no tiene SKU y la peticion no lo envia', async () => {
+      productRepository.findOne.mockResolvedValue(row({ sku: null }));
+
+      await expectCode(useCase().execute('t1', 'p1', { name: 'Soda' }), BadRequestException, 'SKU_REQUIRED');
+      expect(productRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('debe aceptar el SKU enviado (recortado) en un producto sin SKU', async () => {
+      productRepository.findOne.mockResolvedValue(row({ sku: null }));
+      productRepository.update.mockResolvedValue(row());
+
+      await useCase().execute('t1', 'p1', { sku: ' NEW-1 ' });
+
+      expect(productRepository.skuTaken).toHaveBeenCalledWith('t1', 'NEW-1', 'p1');
+      expect(productRepository.update).toHaveBeenCalledWith('t1', 'p1', { sku: 'NEW-1' });
+    });
+
+    it('debe fallar con SKU_ALREADY_EXISTS (409) si otro producto del tenant ya usa el SKU', async () => {
+      productRepository.skuTaken.mockResolvedValue(true);
+
+      await expectCode(useCase().execute('t1', 'p1', { sku: 'dup' }), ConflictException, 'SKU_ALREADY_EXISTS');
+      expect(productRepository.update).not.toHaveBeenCalled();
     });
 
     it('debe permitir vaciar la descripcion con null', async () => {

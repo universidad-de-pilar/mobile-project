@@ -16,6 +16,8 @@ export interface CreateProductData {
     price: string;
     is_available: boolean;
     sort_order: number;
+    sku: string;
+    gluten_free: boolean;
 }
 
 export interface UpdateProductData {
@@ -25,6 +27,8 @@ export interface UpdateProductData {
     price?: string;
     is_available?: boolean;
     sort_order?: number;
+    sku?: string;
+    gluten_free?: boolean;
     // Set only by the image use cases, never by the PATCH DTO.
     image_path?: string | null;
 }
@@ -37,6 +41,7 @@ export interface CatalogLine {
     description: string | null;
     price: string;
     image_path: string | null;
+    gluten_free: boolean;
 }
 
 export interface IProductRepository{
@@ -45,6 +50,7 @@ export interface IProductRepository{
     findCatalog(tenantId:string, storeId:string):Promise<CatalogLine[]>;
     countByStore(tenantId:string, storeId:string):Promise<number>;
     isCategoryOfStore(tenantId:string, categoryId:string, storeId:string):Promise<boolean>;
+    skuTaken(tenantId:string, sku:string, exceptProductId?:string):Promise<boolean>;
     create(tenantId:string, data:CreateProductData):Promise<Product>;
     update(tenantId:string, productId:string, data:UpdateProductData):Promise<Product | null>;
     delete(tenantId:string, productId:string):Promise<Product | null>;

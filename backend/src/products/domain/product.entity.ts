@@ -8,6 +8,8 @@ export class Product {
     image_path: string | null;
     is_available: boolean;
     sort_order: number;
+    sku: string | null;
+    gluten_free: boolean;
     created_at: Date;
     updated_at: Date;
 }

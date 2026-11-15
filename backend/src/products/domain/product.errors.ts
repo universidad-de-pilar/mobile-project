@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, NotFoundException, UnprocessableEntityException } from "@nestjs/common";
+import { BadRequestException, ConflictException, HttpException, NotFoundException, UnprocessableEntityException } from "@nestjs/common";
 
 export const productNotFound = () =>
     new NotFoundException({ statusCode: 404, message: 'Product not found', error: 'Not Found', code: 'PRODUCT_NOT_FOUND' });
@@ -21,3 +21,9 @@ export const unsupportedMediaType = () =>
 
 export const mediaUnreadable = () =>
     new UnprocessableEntityException({ statusCode: 422, message: 'The image could not be read', error: 'Unprocessable Entity', code: 'MEDIA_UNREADABLE' });
+
+export const skuAlreadyExists = () =>
+    new ConflictException({ statusCode: 409, message: 'SKU already exists in this tenant', error: 'Conflict', code: 'SKU_ALREADY_EXISTS' });
+
+export const skuRequired = () =>
+    new BadRequestException({ statusCode: 400, message: 'sku is required', error: 'Bad Request', code: 'SKU_REQUIRED' });
