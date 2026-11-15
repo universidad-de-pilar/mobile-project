@@ -13,7 +13,7 @@ type StepperProps = {
   removeLabel?: string;
 };
 
-const CIRCLE = 32;
+const CIRCLE = 40;
 
 export function Stepper({ value, min = 0, max = 99, onChange, removeLabel }: StepperProps) {
   return (

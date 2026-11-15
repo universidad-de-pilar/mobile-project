@@ -108,7 +108,7 @@ export function ProductDetailSheet({ product, maxQuantity, onClose, onAdd }: Pro
   );
 }
 
-const CLOSE = 36;
+const CLOSE = 40;
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(28, 25, 23, 0.5)' },

@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, Fonts, Layout, Radius, Spacing } from './tokens';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Colors, Fonts, Layout, Radius, Spacing, Typography } from './tokens';
 
 export type TabItem = {
   key: string;
@@ -18,8 +20,12 @@ type TabBarProps = {
 };
 
 export function TabBar({ items, activeKey, onSelect, vertical }: TabBarProps) {
+  const { bottom } = useSafeAreaInsets();
   return (
-    <View accessibilityRole="tablist" style={vertical ? styles.side : styles.bar}>
+    <View
+      accessibilityRole="tablist"
+      style={vertical ? styles.side : [styles.bar, { height: 56 + bottom, paddingBottom: bottom }]}
+    >
       {items.map((item) => {
         const active = item.key === activeKey;
         const color = active ? Colors.primary : Colors.muted;
@@ -27,6 +33,7 @@ export function TabBar({ items, activeKey, onSelect, vertical }: TabBarProps) {
           <Pressable
             key={item.key}
             accessibilityRole="tab"
+            accessibilityLabel={item.label}
             accessibilityState={{ selected: active }}
             onPress={() => onSelect(item.key)}
             style={vertical ? [styles.sideTab, active && styles.sideTabActive] : styles.tab}
@@ -42,7 +49,6 @@ export function TabBar({ items, activeKey, onSelect, vertical }: TabBarProps) {
 
 const styles = StyleSheet.create({
   bar: {
-    height: 72,
     flexDirection: 'row',
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
@@ -66,6 +72,6 @@ const styles = StyleSheet.create({
   },
   sideTabActive: { backgroundColor: Colors.primarySoft },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  sideLabel: { fontSize: 14 },
-  label: { fontFamily: Fonts.medium, fontSize: 11 },
+  sideLabel: { fontSize: Typography.body },
+  label: { fontFamily: Fonts.medium, fontSize: Typography.micro },
 });

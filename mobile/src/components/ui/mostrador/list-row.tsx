@@ -3,7 +3,8 @@ import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, Fonts, Radius, Spacing } from './tokens';
+import { useFocusRing } from './focus-ring';
+import { Colors, Fonts, Radius, Spacing, Typography } from './tokens';
 
 type ListRowProps = {
   title: string;
@@ -17,12 +18,14 @@ type ListRowProps = {
 };
 
 export function ListRow({ title, detail, value, image, trailing, onPress }: ListRowProps) {
+  const { focusProps, ringStyle } = useFocusRing();
   return (
     <Pressable
       accessibilityRole={onPress ? 'button' : undefined}
       disabled={!onPress}
       onPress={onPress}
-      style={styles.row}
+      {...focusProps}
+      style={[styles.row, ringStyle]}
     >
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.icon}>
         {image ? (
@@ -62,7 +65,7 @@ const styles = StyleSheet.create({
   },
   thumb: { width: '100%', height: '100%' },
   text: { flex: 1, gap: 2 },
-  title: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: 14 },
-  detail: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 12 },
-  value: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: 14 },
+  title: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: Typography.body },
+  detail: { color: Colors.muted, fontFamily: Fonts.body, fontSize: Typography.small },
+  value: { color: Colors.ink, fontFamily: Fonts.bold, fontSize: Typography.body },
 });

@@ -14,7 +14,7 @@ type ProductCardProps = {
   onPress?: () => void;
 };
 
-const ADD_SIZE = 32;
+const ADD_SIZE = 40;
 
 export function ProductCard({
   name,

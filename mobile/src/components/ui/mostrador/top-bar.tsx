@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors, Fonts, Radius, Spacing } from './tokens';
+import { Colors, Fonts, Radius, Spacing, Typography } from './tokens';
 
 type TopBarProps = { title: string; store?: string };
 
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: Colors.ink,
   },
-  title: { flexShrink: 1, color: Colors.surface, fontFamily: Fonts.subtitle, fontSize: 20 },
+  title: { flexShrink: 1, color: Colors.surface, fontFamily: Fonts.subtitle, fontSize: Typography.subtitle },
   pill: {
     maxWidth: '50%',
     paddingHorizontal: Spacing.md,
@@ -39,5 +39,5 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     backgroundColor: Colors.primary,
   },
-  pillText: { color: Colors.surface, fontFamily: Fonts.bold, fontSize: 11 },
+  pillText: { color: Colors.surface, fontFamily: Fonts.bold, fontSize: Typography.caption },
 });

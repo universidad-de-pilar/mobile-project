@@ -9,14 +9,16 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { Colors, Fonts, Radius, Spacing } from './tokens';
+import { useFocusRing } from './focus-ring';
+import { Colors, Fonts, Radius, Spacing, Typography } from './tokens';
 
-type ButtonVariant = 'primary' | 'secondary' | 'whatsapp';
+type ButtonVariant = 'primary' | 'secondary' | 'whatsapp' | 'danger' | 'ghost' | 'ghostDanger';
 
 type ButtonProps = {
   title: string;
   onPress: () => void;
   variant?: ButtonVariant;
+  size?: 'md' | 'sm';
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -29,12 +31,16 @@ const VARIANTS = {
   primary: { background: Colors.primary, foreground: Colors.surface },
   secondary: { background: Colors.surface, foreground: Colors.ink },
   whatsapp: { background: Colors.whatsapp, foreground: Colors.surface },
+  danger: { background: Colors.danger, foreground: Colors.surface },
+  ghost: { background: 'transparent', foreground: Colors.primary },
+  ghostDanger: { background: 'transparent', foreground: Colors.danger },
 } as const;
 
 export function Button({
   title,
   onPress,
   variant = 'primary',
+  size = 'md',
   loading = false,
   disabled = false,
   fullWidth = false,
@@ -43,7 +49,12 @@ export function Button({
   accessibilityLabel,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
-  const { background, foreground } = VARIANTS[variant];
+  const { focusProps, ringStyle } = useFocusRing();
+  // Deshabilitado: color plano en lugar de opacidad para mantener el contraste del texto.
+  const transparent = variant === 'ghost' || variant === 'ghostDanger';
+  const { background, foreground } = isDisabled
+    ? { background: transparent ? 'transparent' : Colors.border, foreground: Colors.muted }
+    : VARIANTS[variant];
 
   return (
     <Pressable
@@ -52,12 +63,14 @@ export function Button({
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
       onPress={onPress}
+      {...focusProps}
       style={({ pressed }) => [
         styles.button,
         { backgroundColor: background },
+        size === 'sm' && styles.small,
         variant === 'secondary' && styles.outlined,
         fullWidth && styles.fullWidth,
-        isDisabled && styles.disabled,
+        ringStyle,
         pressed && !isDisabled && styles.pressed,
         style,
       ]}
@@ -86,12 +99,12 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   outlined: { borderWidth: 1, borderColor: Colors.border },
+  small: { minHeight: 44, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm },
   fullWidth: { width: '100%' },
-  disabled: { opacity: 0.55 },
   pressed: { opacity: 0.85 },
   text: {
     fontFamily: Fonts.bold,
-    fontSize: 16,
+    fontSize: Typography.regular,
     textAlign: 'center',
   },
 });
