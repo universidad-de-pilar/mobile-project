@@ -312,6 +312,8 @@ Esquema `Category`:
 | `store_id` | UUID de un local del tenant, obligatorio |
 | `name` | texto 1 a 80 caracteres (se recortan espacios), obligatorio |
 | `sort_order` | entero, opcional, por defecto 0 |
+| `sku` | texto 1 a 64 (se recorta), obligatorio; único por comercio sin distinguir mayúsculas, entre todos sus locales |
+| `gluten_free` | booleano, opcional, por defecto `false` |
 
 - Respuesta **201**: `Category`. Errores: 404 `STORE_NOT_FOUND`; 409 `CATEGORY_NAME_TAKEN` (mismo nombre en el local sin distinguir mayúsculas).
 
@@ -328,10 +330,11 @@ Esquema `Product`:
 ```json
 { "product_id": "7c2b…", "store_id": "9d3e…", "category_id": "3f1a…", "name": "Agua 500 ml",
   "description": "Sin gas", "price": "1500.00", "image_url": "/media/c1a2…/products/8e9f….webp",
-  "is_available": true, "sort_order": 0, "created_at": "…", "updated_at": "…" }
+  "is_available": true, "sort_order": 0, "sku": "AGUA-500", "gluten_free": false,
+  "created_at": "…", "updated_at": "…" }
 ```
 
-`image_url` es `null` si el producto no tiene imagen.
+`image_url` es `null` si el producto no tiene imagen. `sku` es `null` solo en productos anteriores a esta regla; se exige al editarlos. `gluten_free` marca el producto "Sin TACC".
 
 ### `GET /products?store_id=<uuid>&category_id=<uuid>&is_available=<true|false>`
 - Permiso: `products:read`. RF-011, RF-013. `store_id` obligatorio; los otros dos filtros son opcionales. Respuesta 200: arreglo de `Product` ordenado por `sort_order`, `name`. Errores: 404 `STORE_NOT_FOUND`.
@@ -345,7 +348,7 @@ Esquema `Product`:
 
 ```json
 { "store_id": "9d3e…", "category_id": "3f1a…", "name": "Agua 500 ml", "description": "Sin gas",
-  "price": "1500.00", "is_available": true, "sort_order": 0 }
+  "price": "1500.00", "is_available": true, "sort_order": 0, "sku": "AGUA-500", "gluten_free": false }
 ```
 
 | Campo | Regla |
@@ -359,10 +362,10 @@ Esquema `Product`:
 | `sort_order` | entero, opcional, por defecto 0 |
 
 - Respuesta **201**: `Product` con `image_url: null`. La imagen se sube aparte (`PUT /products/:id/image`).
-- Errores: 400 precio menor o igual a 0 o con más de 2 decimales; 404 `STORE_NOT_FOUND` o categoría inexistente / de otro local; 422 `PRODUCT_LIMIT_REACHED` (el local ya tiene 200 productos, límite de RF-014).
+- Errores: 400 precio menor o igual a 0 o con más de 2 decimales; 404 `STORE_NOT_FOUND` o categoría inexistente / de otro local; 409 `SKU_ALREADY_EXISTS` (otro producto del comercio ya usa ese SKU); 422 `PRODUCT_LIMIT_REACHED` (el local ya tiene 200 productos, límite de RF-014).
 
 ### `PATCH /products/:productId`
-- Permiso: `products:update`. RF-011, RF-013, HU-07, HU-08. Body: cualquiera de `category_id`, `name`, `description`, `price`, `is_available`, `sort_order` (mismas reglas, al menos uno). Cambiar `is_available` a `false` oculta el producto del catálogo público y de nuevos pedidos. Respuesta 200: `Product`. Errores: 400; 404 (producto o categoría).
+- Permiso: `products:update`. RF-011, RF-013, HU-07, HU-08. Body: cualquiera de `category_id`, `name`, `description`, `price`, `is_available`, `sort_order`, `sku`, `gluten_free` (mismas reglas, al menos uno). Si el producto guardado no tiene SKU, el body debe incluir `sku`: 400 `SKU_REQUIRED`. Cambiar `is_available` a `false` oculta el producto del catálogo público y de nuevos pedidos. Respuesta 200: `Product`. Errores: 400 (`SKU_REQUIRED` incluido); 404 (producto o categoría); 409 `SKU_ALREADY_EXISTS`.
 
 ### `DELETE /products/:productId`
 - Permiso: `products:delete`. RF-011. Respuesta **204**. Borra también la imagen. Los pedidos anteriores conservan nombre y precio (snapshot en `order_items`). Errores: 404.
@@ -677,13 +680,13 @@ Audiencia: persona que escaneó el QR. Anónimo. Tenant por Host (`local1.mostra
     { "category_id": "3f1a…", "name": "Bebidas",
       "products": [
         { "product_id": "7c2b…", "name": "Agua 500 ml", "description": "Sin gas",
-          "price": "1500.00", "image_url": "/media/c1a2…/products/8e9f….webp" }
+          "price": "1500.00", "image_url": "/media/c1a2…/products/8e9f….webp", "gluten_free": false }
       ] }
   ]
 }
 ```
 
-`tenant` es el comercio resuelto por Host; la web muestra "comercio · local" en el encabezado del menú. `image_url` es `null` si no hay imagen (la web usa su imagen por defecto). Catálogo vacío: `"categories": []`.
+`tenant` es el comercio resuelto por Host; la web muestra "comercio · local" en el encabezado del menú. `image_url` es `null` si no hay imagen (la web usa su imagen por defecto). `gluten_free` indica "Sin TACC"; el SKU no se expone públicamente. Catálogo vacío: `"categories": []`.
 - Caché (RNF-002): la respuesta 200 lleva `ETag` (hash del cuerpo) y `Cache-Control: public, max-age=60, stale-while-revalidate=300`; con `If-None-Match` igual responde 304 sin cuerpo. Un cambio del catálogo tarda hasta ~1 min en verse. Las respuestas de error (404, 503 de comercio suspendido) no llevan estos encabezados.
 - Errores: 404 `TENANT_NOT_FOUND`; 404 `STORE_NOT_FOUND` (el local no existe, está desactivado o es de otro tenant; la web muestra la página de error).
 

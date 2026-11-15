@@ -6,6 +6,7 @@ const product = (id: string) => ({
   description: null,
   price: '1.00',
   image_url: null,
+  gluten_free: false,
 });
 
 const categories = [

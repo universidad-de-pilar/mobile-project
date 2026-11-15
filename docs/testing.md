@@ -927,6 +927,8 @@ Manual (backend running with the dev seed, owner token of `local1`):
 - `GET /categories?store_id=<uuid>`: ordered by `sort_order`, `name`; store of another tenant: 404 `STORE_NOT_FOUND`; missing or non-UUID `store_id`: 400.
 - `PATCH`/`DELETE` with a category id of another tenant: 404; non-UUID id: 400; delete with products: 409 `CATEGORY_HAS_PRODUCTS`.
 - Employee token: 403 on POST, PATCH and DELETE.
+- SKU: `POST` without `sku`: 400. Same SKU twice in the same tenant, in two stores and with different case (`ab-1` / `AB-1`): second returns 409 `SKU_ALREADY_EXISTS`. Same SKU in another tenant: 201. `PATCH` of a legacy product (null `sku`) without `sku`: 400 `SKU_REQUIRED`; with `sku`: 200. Apply `database/scripts/003_products_gluten_free_sku.sql` twice: no error (idempotent). A concurrent duplicate hits the unique index and also returns 409.
+- Mobile (`product-rules.test.ts`): SKU required, max 64, 409/400 messages in Spanish. Backoffice editor: SKU field and "Sin TACC" switch present; editing a legacy product requires filling the SKU.
 - Supertest cases TC-026..TC-029 stay pending (no e2e harness with a test DB yet); the pg error mapping (23505, 23503) is only verified manually.
 
 ### Products (#51, RF-011/RF-013)
@@ -936,6 +938,7 @@ Automated (`backend/test/products/products.use-cases.spec.ts`, mocked repositori
 - Get: 404 `PRODUCT_NOT_FOUND` for a missing or other-tenant id.
 - Create: 404 `STORE_NOT_FOUND`; 404 `CATEGORY_NOT_FOUND` when the category belongs to another store; price `0`, `0.00`, `0.0`, `-1` rejected with 400, `0.01` accepted (TC-031/TC-032 price logic); defaults (`is_available` true, `sort_order` 0, `description` null, name trimmed); 422 `PRODUCT_LIMIT_REACHED` at 200 products, 199 accepted.
 - Update: 400 with no fields; price 0 rejected; undefined keys are not forwarded; `description: null` is forwarded; 404 `PRODUCT_NOT_FOUND`; changing `category_id` validates the category against the product's store.
+- SKU: create requires `sku` (DTO) and trims it; duplicate in the tenant (checked through the repository, any store or case) returns 409 `SKU_ALREADY_EXISTS`; `gluten_free` defaults to `false`; update of a product without stored SKU and no `sku` in the body returns 400 `SKU_REQUIRED`; update with a taken `sku` (excluding the product itself) returns 409; PATCH DTO rejects `null`, blank and over-64 `sku`.
 - Delete: 404 `PRODUCT_NOT_FOUND`; returns `image_path` for later file cleanup (T4).
 - Response: `image_path` maps to `image_url` (`/media/<path>` or `null`) and is not exposed.
 
@@ -956,12 +959,13 @@ Automated (`backend/test/products/get-public-catalog.use-case.spec.ts`, mocked r
 - Store and catalog are looked up with the tenant id; `is_available = true` filtering, ordering and omission of empty categories are done in SQL (not covered by Jest).
 - Empty catalog returns `categories: []`.
 - Lines are grouped by category keeping the received order.
-- Product shape: `product_id`, `name`, `description` (null kept), `price`, `image_url` (`/media/<path>` or `null`); no `store_id` or `is_available`.
+- Product shape: `product_id`, `name`, `description` (null kept), `price`, `image_url` (`/media/<path>` or `null`), `gluten_free`; no `store_id`, `is_available` or `sku`.
 
 Manual (backend running with the dev seed, `X-Tenant-Slug: local1`, no token):
 - `GET /public/stores/<slug>/catalog`: 200; only available products; categories by `sort_order`, `name`; a category with all products unavailable is absent.
 - Unknown slug, deactivated store, or slug of another tenant: 404 `STORE_NOT_FOUND`. Unknown tenant: 404 `TENANT_NOT_FOUND`.
 - Set a product `is_available=false` via PATCH, then repeat the GET: it is gone (TC-038).
+- Menu: the "Sin TACC" mark (accessibilityLabel `Sin TACC`) appears in the product card and detail sheet only when `gluten_free` is true; it is absent otherwise.
 - Supertest cases (TC-038, TC-040..TC-042) stay pending (no e2e harness with a test DB yet); the SQL ordering and filtering are only verified manually.
 
 ### SQL versioning (BU-018)

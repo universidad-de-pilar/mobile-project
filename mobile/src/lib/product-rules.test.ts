@@ -33,15 +33,21 @@ describe('priceToInput', () => {
 });
 
 describe('validateProduct', () => {
-  const ok = { name: ' Agua ', description: '', price: '1500', categoryId: 'c1' };
+  const ok = { name: ' Agua ', description: '', price: '1500', categoryId: 'c1', sku: 'AG-1' };
 
   it('accepts a valid product', () => expect(validateProduct(ok)).toEqual({}));
 
   it('requires name, category and a positive price', () => {
-    const errors = validateProduct({ name: ' ', description: '', price: '0', categoryId: '' });
+    const errors = validateProduct({ name: ' ', description: '', price: '0', categoryId: '', sku: ' ' });
     expect(errors.name).toBe('Ingresá el nombre.');
     expect(errors.categoryId).toBe('Elegí una categoría.');
     expect(errors.price).toBe('El precio debe ser mayor que 0.');
+    expect(errors.sku).toBe('Ingresá el SKU.');
+  });
+
+  it('limits sku to 64 characters', () => {
+    expect(validateProduct({ ...ok, sku: 'a'.repeat(65) }).sku).toBe('El SKU admite hasta 64 caracteres.');
+    expect(validateProduct({ ...ok, sku: 'a'.repeat(64) }).sku).toBeUndefined();
   });
 
   it('limits name to 80 and description to 500 characters', () => {
@@ -84,6 +90,8 @@ describe('server error messages', () => {
     expect(productErrorMessage(new ApiError(404, 'PRODUCT_NOT_FOUND', 'x'))).toBe('El producto ya no existe.');
     expect(productErrorMessage(new ApiError(403, null, 'x'))).toBe('No tenés permiso para esta acción.');
     expect(productErrorMessage(new ApiError(0, null, 'x'))).toBe('No se pudo conectar con el servidor.');
+    expect(productErrorMessage(new ApiError(409, 'SKU_ALREADY_EXISTS', 'x'))).toBe('Ya existe un producto con ese SKU.');
+    expect(productErrorMessage(new ApiError(400, 'SKU_REQUIRED', 'x'))).toBe('Ingresá el SKU para guardar este producto.');
     expect(productErrorMessage(new Error('x'))).toBe('No se pudo guardar el producto.');
   });
   it('maps category codes', () => {

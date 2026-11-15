@@ -16,6 +16,7 @@ export type DetailProduct = {
   description?: string | null;
   price: string;
   imageUrl?: string | null;
+  glutenFree?: boolean;
 };
 
 type ProductDetailSheetProps = {
@@ -67,6 +68,15 @@ export function ProductDetailSheet({ product, maxQuantity, onClose, onAdd }: Pro
               <Text style={styles.name}>{product.name}</Text>
               {product.description ? <Text style={styles.description}>{product.description}</Text> : null}
               <Text style={styles.price}>{formatPrice(product.price)}</Text>
+              {product.glutenFree ? (
+                <Image
+                  source={require('@/assets/images/frontend/sin-tacc.png')}
+                  accessible
+                  accessibilityLabel="Sin TACC"
+                  style={styles.glutenFree}
+                  contentFit="contain"
+                />
+              ) : null}
               {atMax ? (
                 <Text style={styles.max}>Ya tenés el máximo de este producto ({MAX_QUANTITY}).</Text>
               ) : null}
@@ -129,6 +139,7 @@ const styles = StyleSheet.create({
   name: { color: Colors.ink, fontFamily: Fonts.title, fontSize: 22 },
   description: { color: Colors.muted, fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
   price: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: 20, marginTop: Spacing.xs },
+  glutenFree: { width: 29, height: 32 },
   max: { color: Colors.danger, fontFamily: Fonts.medium, fontSize: 14 },
   footer: {
     flexDirection: 'row',

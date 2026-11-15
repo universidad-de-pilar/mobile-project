@@ -3,7 +3,11 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { CatalogLine, CreateProductData, IProductRepository, ProductFilters, UpdateProductData } from "../domain/product.repository";
 import { Product } from "../domain/product.entity";
+import { skuAlreadyExists } from "../domain/product.errors";
 import { ProductOrmEntity } from "./product.orm-entity";
+
+const UNIQUE_VIOLATION = '23505';
+const pgCode = (error: any): string | undefined => error?.driverError?.code ?? error?.code;
 
 const toProduct = (row: ProductOrmEntity): Product => ({
     product_id: row.product_id,
@@ -15,6 +19,8 @@ const toProduct = (row: ProductOrmEntity): Product => ({
     image_path: row.image_path,
     is_available: row.is_available,
     sort_order: row.sort_order,
+    sku: row.sku,
+    gluten_free: row.gluten_free,
     created_at: row.created_at,
     updated_at: row.updated_at,
 });
@@ -48,7 +54,7 @@ export class PostgreProductRepository implements IProductRepository{
     // Inner join: categories without available products do not appear.
     findCatalog(tenantId: string, storeId: string): Promise<CatalogLine[]> {
         return this.productDb.manager.query(
-            `SELECT c.category_id, c.name AS category_name, p.product_id, p.name, p.description, p.price, p.image_path
+            `SELECT c.category_id, c.name AS category_name, p.product_id, p.name, p.description, p.price, p.image_path, p.gluten_free
              FROM products p JOIN categories c ON c.category_id = p.category_id AND c.tenant_id = p.tenant_id
              WHERE p.tenant_id = $1 AND p.store_id = $2 AND p.is_available = true
              ORDER BY c.sort_order, c.name, c.category_id, p.sort_order, p.name, p.product_id`,
@@ -68,8 +74,16 @@ export class PostgreProductRepository implements IProductRepository{
         return rows.length > 0;
     }
 
+    async skuTaken(tenantId: string, sku: string, exceptProductId?: string): Promise<boolean> {
+        const rows = await this.productDb.manager.query(
+            'SELECT 1 FROM products WHERE tenant_id = $1 AND lower(sku) = lower($2) AND ($3::uuid IS NULL OR product_id <> $3) LIMIT 1',
+            [tenantId, sku, exceptProductId ?? null],
+        );
+        return rows.length > 0;
+    }
+
     async create(tenantId: string, data: CreateProductData): Promise<Product> {
-        const saved = await this.productDb.save(this.productDb.create({ ...data, tenant_id: tenantId }));
+        const saved = await this.productDb.save(this.productDb.create({ ...data, tenant_id: tenantId })).catch(this.mapSkuConflict);
         // Reload so price comes back as NUMERIC(12,2) text ("1500" -> "1500.00").
         return (await this.findOne(tenantId, saved.product_id))!;
     }
@@ -77,11 +91,16 @@ export class PostgreProductRepository implements IProductRepository{
     async update(tenantId: string, productId: string, data: UpdateProductData): Promise<Product | null> {
         // TypeORM binds undefined keys as NULL; drop them. null (e.g. description) is kept.
         const changes = Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined));
-        const result = await this.productDb.update({ product_id: productId, tenant_id: tenantId }, changes);
+        const result = await this.productDb.update({ product_id: productId, tenant_id: tenantId }, changes).catch(this.mapSkuConflict);
         if (result.affected === 0) {
             return null;
         }
         return this.findOne(tenantId, productId);
+    }
+
+    // Red de seguridad ante una carrera: el indice unico de sku es la garantia final.
+    private mapSkuConflict(error: unknown): never {
+        throw pgCode(error) === UNIQUE_VIOLATION ? skuAlreadyExists() : error;
     }
 
     async delete(tenantId: string, productId: string): Promise<Product | null> {

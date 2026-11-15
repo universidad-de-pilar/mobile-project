@@ -9,6 +9,7 @@ type ProductCardProps = {
   description?: string;
   price: string;
   imageUrl?: string | null;
+  glutenFree?: boolean;
   onAdd: () => void;
   onPress?: () => void;
 };
@@ -20,6 +21,7 @@ export function ProductCard({
   description,
   price,
   imageUrl,
+  glutenFree,
   onAdd,
   onPress,
 }: ProductCardProps) {
@@ -56,6 +58,15 @@ export function ProductCard({
           ) : null}
           <View style={styles.row}>
             <Text style={styles.price}>{price}</Text>
+            {glutenFree ? (
+              <Image
+                source={require('@/assets/images/frontend/sin-tacc.png')}
+                accessible
+                accessibilityLabel="Sin TACC"
+                style={styles.glutenFree}
+                contentFit="contain"
+              />
+            ) : null}
           </View>
         </View>
       </Pressable>
@@ -104,6 +115,7 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
   },
   price: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: 16 },
+  glutenFree: { width: 22, height: 24, marginLeft: 8 },
   add: {
     position: 'absolute',
     right: 12,

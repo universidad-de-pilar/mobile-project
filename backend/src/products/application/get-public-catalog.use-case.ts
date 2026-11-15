@@ -4,7 +4,7 @@ import { TENANT_REPOSITORY, type ITenantRepository } from "src/tenants/domain/te
 import { PRODUCT_REPOSITORY, type IProductRepository } from "../domain/product.repository";
 
 export interface PublicProduct {
-    product_id: string; name: string; description: string | null; price: string; image_url: string | null;
+    product_id: string; name: string; description: string | null; price: string; image_url: string | null; gluten_free: boolean;
 }
 
 @Injectable()
@@ -41,6 +41,7 @@ export class GetPublicCatalogUseCase {
                 description: line.description,
                 price: line.price,
                 image_url: line.image_path ? `/media/${line.image_path}` : null,
+                gluten_free: line.gluten_free,
             });
         }
 

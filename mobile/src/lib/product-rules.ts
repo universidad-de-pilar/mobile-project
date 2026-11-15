@@ -25,7 +25,7 @@ export function parsePrice(input: string): string | null {
 
 export const priceToInput = (price: string) => price.replace('.', ',');
 
-export type ProductForm = { name: string; description: string; price: string; categoryId: string };
+export type ProductForm = { name: string; description: string; price: string; categoryId: string; sku: string };
 export type ProductErrors = Partial<Record<keyof ProductForm, string>>;
 
 export function validateProduct(form: ProductForm): ProductErrors {
@@ -34,6 +34,9 @@ export function validateProduct(form: ProductForm): ProductErrors {
   if (!name) errors.name = 'Ingresá el nombre.';
   else if (name.length > 80) errors.name = 'El nombre admite hasta 80 caracteres.';
   if (form.description.length > 500) errors.description = 'La descripción admite hasta 500 caracteres.';
+  const sku = form.sku.trim();
+  if (!sku) errors.sku = 'Ingresá el SKU.';
+  else if (sku.length > 64) errors.sku = 'El SKU admite hasta 64 caracteres.';
   if (!form.categoryId) errors.categoryId = 'Elegí una categoría.';
   if (!form.price.trim()) errors.price = 'Ingresá el precio.';
   else if (!parsePrice(form.price)) errors.price = 'El precio debe ser mayor que 0.';
@@ -64,6 +67,8 @@ export function uploadErrorMessage(error: unknown): string {
 export function productErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.code === 'PRODUCT_LIMIT_REACHED') return 'El local llegó al límite de 200 productos.';
+    if (error.code === 'SKU_ALREADY_EXISTS') return 'Ya existe un producto con ese SKU.';
+    if (error.code === 'SKU_REQUIRED') return 'Ingresá el SKU para guardar este producto.';
     if (error.code === 'PRODUCT_NOT_FOUND') return 'El producto ya no existe.';
     if (error.status === 403) return 'No tenés permiso para esta acción.';
     if (error.status === 0) return OFFLINE;

@@ -90,6 +90,8 @@ function Form({ storeId, categories, product }: { storeId: string; categories: C
   const [description, setDescription] = useState(product?.description ?? '');
   const [price, setPrice] = useState(product ? priceToInput(product.price) : '');
   const [categoryId, setCategoryId] = useState(product?.category_id ?? '');
+  const [sku, setSku] = useState(product?.sku ?? '');
+  const [glutenFree, setGlutenFree] = useState(product?.gluten_free ?? false);
   const [available, setAvailable] = useState(product?.is_available ?? true);
   const [image, setImage] = useState<PickedImage | null>(null);
   const [picking, setPicking] = useState(false);
@@ -122,7 +124,7 @@ function Form({ storeId, categories, product }: { storeId: string; categories: C
   }
 
   async function submit() {
-    const found = validateProduct({ name, description, price, categoryId });
+    const found = validateProduct({ name, description, price, categoryId, sku });
     setErrors(found);
     setError(null);
     if (Object.keys(found).length > 0 || !lock.acquire()) return;
@@ -133,6 +135,8 @@ function Form({ storeId, categories, product }: { storeId: string; categories: C
         name: name.trim(),
         price: parsePrice(price)!,
         is_available: available,
+        sku: sku.trim(),
+        gluten_free: glutenFree,
       };
       if (savedId.current) {
         await updateProduct(savedId.current, { ...fields, description: description.trim() || null });
@@ -171,6 +175,7 @@ function Form({ storeId, categories, product }: { storeId: string; categories: C
       {imageError ? <Text accessibilityRole="alert" style={styles.error}>{imageError}</Text> : null}
 
       <TextField label="Nombre" value={name} onChangeText={setName} error={errors.name} editable={!sending} />
+      <TextField label="SKU" value={sku} onChangeText={setSku} error={errors.sku} autoCapitalize="characters" editable={!sending} />
       <TextField
         label="Descripción"
         value={description}
@@ -224,6 +229,11 @@ function Form({ storeId, categories, product }: { storeId: string; categories: C
       <View style={styles.availability}>
         <Text style={styles.selectText}>Disponible para pedir</Text>
         <Toggle label="Disponible para pedir" value={available} onValueChange={setAvailable} disabled={sending} />
+      </View>
+
+      <View style={styles.availability}>
+        <Text style={styles.selectText}>Sin TACC</Text>
+        <Toggle label="Sin TACC" value={glutenFree} onValueChange={setGlutenFree} disabled={sending} />
       </View>
 
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}

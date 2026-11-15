@@ -2,7 +2,7 @@ import { Inject, Injectable, NotFoundException, UnprocessableEntityException } f
 import { TENANT_REPOSITORY, type ITenantRepository } from "src/tenants/domain/tenant.repository";
 import { PRODUCT_REPOSITORY, type IProductRepository } from "../domain/product.repository";
 import { toProductResponse } from "../domain/product.entity";
-import { assertPositivePrice, categoryNotFound } from "../domain/product.errors";
+import { assertPositivePrice, categoryNotFound, skuAlreadyExists } from "../domain/product.errors";
 
 const MAX_PRODUCTS_PER_STORE = 200;
 
@@ -18,7 +18,7 @@ export class CreateProductUseCase {
 
     async execute(tenantId: string, data: {
         store_id: string; category_id: string; name: string; description?: string;
-        price: string; is_available?: boolean; sort_order?: number;
+        price: string; is_available?: boolean; sort_order?: number; sku: string; gluten_free?: boolean;
     }){
 
         if (!(await this.tenantRepository.isStoreOfTenant(tenantId, data.store_id))){
@@ -29,6 +29,11 @@ export class CreateProductUseCase {
 
         if (!(await this.productRepository.isCategoryOfStore(tenantId, data.category_id, data.store_id))){
             throw categoryNotFound();
+        }
+
+        const sku = data.sku.trim();
+        if (await this.productRepository.skuTaken(tenantId, sku)){
+            throw skuAlreadyExists();
         }
 
         // ponytail: count-then-insert is not atomic; a concurrent burst could overshoot the limit slightly.
@@ -44,6 +49,8 @@ export class CreateProductUseCase {
             price: data.price,
             is_available: data.is_available ?? true,
             sort_order: data.sort_order ?? 0,
+            sku,
+            gluten_free: data.gluten_free ?? false,
         });
 
         return toProductResponse(product);
