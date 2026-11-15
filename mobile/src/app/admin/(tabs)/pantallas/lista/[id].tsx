@@ -188,20 +188,19 @@ export default function ListEditor() {
             <Thumb item={r} size={56} />
             <View style={styles.info}>
               <Text numberOfLines={1} style={styles.itemName}>{r.original_name}</Text>
-              {r.type === 'image' && canEdit ? (
-                <View style={styles.duration}>
-                  <Stepper value={r.duration_seconds} min={3} max={60} onChange={(v) => change(rows.map((x, j) => (j === i ? { ...x, duration_seconds: v } : x)))} />
-                  <Text style={styles.hint}>segundos</Text>
-                </View>
-              ) : (
-                <Text style={styles.hint}>{contentSubtitle(r)}</Text>
-              )}
+              {r.type === 'image' && canEdit ? null : <Text style={styles.hint}>{contentSubtitle(r)}</Text>}
             </View>
             {canEdit ? (
               <View style={styles.actions}>
                 <IconButton icon="chevron-up" label={`Subir ${r.original_name}`} disabled={i === 0} onPress={() => change(moveItem(rows, i, -1))} />
                 <IconButton icon="chevron-down" label={`Bajar ${r.original_name}`} disabled={i === rows.length - 1} onPress={() => change(moveItem(rows, i, 1))} />
                 <IconButton icon="close" label={`Quitar ${r.original_name}`} apart onPress={() => change(rows.filter((_, j) => j !== i))} />
+              </View>
+            ) : null}
+            {r.type === 'image' && canEdit ? (
+              <View style={styles.duration}>
+                <Stepper value={r.duration_seconds} min={3} max={60} onChange={(v) => change(rows.map((x, j) => (j === i ? { ...x, duration_seconds: v } : x)))} />
+                <Text style={styles.hint}>segundos</Text>
               </View>
             ) : null}
           </View>
@@ -234,10 +233,11 @@ const styles = StyleSheet.create({
   content: { padding: Layout.screenPadding, gap: Spacing.md },
   statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
   title: { color: Colors.ink, fontFamily: Fonts.subtitle, fontSize: Typography.large, marginTop: Spacing.section },
-  item: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
-  info: { flex: 1, gap: Spacing.xs },
+  item: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
+  info: { flex: 1, minWidth: 0, gap: Spacing.xs },
   itemName: { color: Colors.ink, fontFamily: Fonts.medium, fontSize: Typography.body },
-  duration: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  // Línea propia debajo: el stepper no entra junto a las flechas en pantallas angostas
+  duration: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   icon: { width: Layout.minTouchTarget, height: Layout.minTouchTarget, alignItems: 'center', justifyContent: 'center' },
   apart: { marginLeft: Spacing.md },
