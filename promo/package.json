@@ -3,10 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "reset": "node --env-file=../backend/.env capture/reset.mjs",
-    "capture": "npm run reset && node capture/capture.mjs",
-    "stills": "npm run reset && node capture/stills.mjs",
-    "scenes": "npm run reset && node capture/scenes.mjs",
+    "scenes": "node capture/scenes.mjs",
     "prepare-media": "node scripts/prepare-media.mjs",
     "studio": "npm run prepare-media && remotion studio src/index.ts",
     "render": "npm run prepare-media && remotion render src/index.ts Presentacion out/mostrador-presentacion.mp4"
@@ -15,7 +12,6 @@
     "@remotion/cli": "^4.0.540",
     "@remotion/google-fonts": "^4.0.540",
     "@remotion/transitions": "^4.0.540",
-    "pg": "^8.13.0",
     "playwright": "^1.50.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

@@ -1,32 +1,30 @@
 # Promo video assets
 
-Records real-app clips with Playwright (clips are regenerable, not versioned).
-
-Prerequisites: backend (`:3000`) and web (`http://local1.localhost:8081`) running, `database/seeds/dev_local1.sql` applied.
+Records real-app clips with Playwright against the deployed app (clips are regenerable, not versioned).
 
 ```
 npm install
 npx playwright install chromium
-npm run reset                   # dev DB: delete local1/palermo orders, the "Promo del día"/"Desayunos" lists and "Promo hamburguesa" media the scenes create, rewind order counter (sql/reset_demo_orders.sql)
-npm run capture                 # reset, then all clips -> clips/ (.webm desktop, .mp4 phone, + .png of the final state)
-npm run capture -- autopedido   # only clips whose name contains the filter
-npm run stills [name]           # reset, then 4K PNG stills for Veo (phone 1215x2160, desktop/player 3840x2160) -> stills/
-npm run scenes [name]           # reset, then one trimmed .mp4 per storyboard scene -> scenes/
+PROMO_EMAIL=... PROMO_PASSWORD=... npm run scenes [filter]   # one .mp4 per scene -> scenes/mp4/ (+ final-state .png in scenes/png/)
 ```
 
-`reset` reads the `DB_*` settings from `backend/.env` (dev only; uploaded files stay orphaned in the dev uploads dir). Each run starts with order #1. Lists and media created by hand are left alone.
+Credentials are read only from the environment; nothing is stored in files. Optional overrides: `PROMO_WEB` (default `https://mostrador-io.onrender.com`), `PROMO_API`, `PROMO_TENANT` (`unpilar`), `PROMO_STORE` (`cafeteria`). Render free tier may cold-start, so the first request can take a minute. Requires `ffmpeg` on PATH.
 
-Scene clips (and the phone clip) are CDP screencasts started once the screen is settled and stopped 0.5 s after the last action, so they need no trimming. `rec.skip()` cuts spinner/network waits out of a clip. The Pantallas scenes (`s7a-lista`, `s7c-horario`) use a 960x540 @2x viewport (still the wide layout) so the UI fills the laptop frame at 1920x1080. `s7b-player` is still recorded but the video shows `ai/pantalla-player.png` on the TV instead. `capture` (raw clips) is not used by the video. Phone: 405x720 @3x (1215x2160) downscaled to 1080x1920; desktop: 1920x1080. All H.264, 30 fps. Requires `ffmpeg` on PATH.
+Scenes: `m1-menu`, `m2-pedido` (phone, 405x720 @3x -> 1080x1920), `t1-vincular` (backoffice, TV pairing code), `t2-player` (linked player, 1920x1080), `b1-ordenes`, `b2-catalogo`, `b3-pantallas`, `b4-equipo`, `b5-qr` (backoffice, 960x540 @2x -> 1920x1080, still the wide layout). All H.264, 30 fps.
+
+Scenes act on the real store: `m2-pedido` and `b1-ordenes` create real orders, and `t1`/`t2`/`b3` use a test screen named "Vitrina" (created if missing, reset before each of them; `b3` also creates and removes a "Promo del día" list). Nothing in Catálogo or Equipo is saved.
+
+Clips are CDP screencasts started once the screen is settled and stopped 0.5 s after the last action, so they need no trimming. `rec.skip()` cuts spinner/network waits out of a clip.
 
 ## Presentation video (Remotion)
 
-1080p / 30 fps product presentation built from `ai/*.mp4` (Veo), `ai/pantalla-player.png` and `scenes/*.mp4` (real app: `s3`-`s6`, `s7a-lista`, `s7c-horario`).
+1080p / 30 fps product presentation (v3) built from `ai/apertura.mp4` and `ai/tv.mp4` (Veo, audio muted), the real clips in `scenes/mp4/*.mp4` and `ai/musica.mp3`.
 
 ```
 npm run studio   # preview in Remotion Studio
-npm run render   # -> out/mostrador-presentacion.mp4 (H.264, ~71 s)
+npm run render   # -> out/mostrador-presentacion.mp4 (H.264, exactly the music length, 71.37 s)
 ```
 
 Both scripts first copy the media into `public/` (gitignored) via `scripts/prepare-media.mjs`.
 
-Optional soundtrack: drop `ai/musica.mp3`; it plays under the whole video at 0.3 volume with fades. The video renders fine without it.
+The video length and every section cut are anchored to the beats of `ai/musica.mp3` (table at the top of `src/Presentacion.tsx`); the music plays under the whole video with fades. `t1-vincular` and `b4-equipo` are masked in the composition because the recordings show a screen link token and the owner's email; re-check the masks if those scenes are re-recorded.

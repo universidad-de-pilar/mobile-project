@@ -3,21 +3,25 @@ import { cpSync, existsSync, mkdirSync } from 'node:fs';
 
 const files = [
   'ai/apertura.mp4',
-  'ai/cierre.mp4',
+  'ai/tv.mp4',
   'ai/musica.mp3',
-  'ai/pantalla-player.png',
-  'scenes/s3-autopedido.mp4',
-  'scenes/s4-confirmar.mp4',
-  'scenes/s5-ordenes.mp4',
-  'scenes/s6-catalogo.mp4',
-  'scenes/s7a-lista.mp4',
-  'scenes/s7c-horario.mp4',
+  ...[
+    'm1-menu',
+    'm2-pedido',
+    't1-vincular',
+    't2-player',
+    'b1-ordenes',
+    'b2-catalogo',
+    'b3-pantallas',
+    'b4-equipo',
+    'b5-qr',
+  ].map((s) => `scenes/mp4/${s}.mp4`),
 ];
 for (const f of files) {
   if (!existsSync(f)) {
     console.log(`skip (missing): ${f}`);
     continue;
   }
-  mkdirSync(`public/${f.split('/')[0]}`, { recursive: true });
+  mkdirSync(`public/${f.slice(0, f.lastIndexOf('/'))}`, { recursive: true });
   cpSync(f, `public/${f}`);
 }

@@ -1,10 +1,43 @@
 import React from 'react';
-import { OffthreadVideo, staticFile } from 'remotion';
+import { OffthreadVideo, staticFile, useCurrentFrame } from 'remotion';
+import { FPS } from './theme';
 
-type ScreenProps = { src: string; rate?: number; zoom?: number; startFrame?: number };
+type ScreenProps = { src: string; rate?: number; zoom?: number; startFrame?: number; children?: React.ReactNode };
+
+// Tapa una zona del clip (px del clip de 1920x1080) con desenfoque opaco desde el segundo `after`
+// del clip original; sigue el tiempo real del clip aunque se acelere.
+export const Mask: React.FC<{ x: number; y: number; w: number; h: number; after: number; until?: number; bg: string; startFrame: number; rate: number }> = ({
+  x,
+  y,
+  w,
+  h,
+  after,
+  until = Infinity,
+  bg,
+  startFrame,
+  rate,
+}) => {
+  const frame = useCurrentFrame();
+  const s = (startFrame + frame * rate) / FPS;
+  if (s < after || s >= until) return null;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: `${(x / 1920) * 100}%`,
+        top: `${(y / 1080) * 100}%`,
+        width: `${(w / 1920) * 100}%`,
+        height: `${(h / 1080) * 100}%`,
+        background: bg,
+        backdropFilter: 'blur(20px)',
+        borderRadius: 10,
+      }}
+    />
+  );
+};
 
 // Plays a clip filling its parent; zoom magnifies from the top-left corner (desktop UIs sit there).
-export const Screen: React.FC<ScreenProps> = ({ src, rate = 1, zoom = 1, startFrame = 0 }) => (
+export const Screen: React.FC<ScreenProps> = ({ src, rate = 1, zoom = 1, startFrame = 0, children }) => (
   <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: '#000' }}>
     <OffthreadVideo
       src={staticFile(src)}
@@ -19,6 +52,7 @@ export const Screen: React.FC<ScreenProps> = ({ src, rate = 1, zoom = 1, startFr
         transformOrigin: '0 0',
       }}
     />
+    {children}
   </div>
 );
 

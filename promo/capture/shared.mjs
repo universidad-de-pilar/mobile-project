@@ -5,12 +5,10 @@ import { writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-// Tenant comes from the subdomain, so never use plain localhost.
-export const WEB = process.env.PROMO_WEB ?? 'http://local1.localhost:8081';
-export const API = process.env.PROMO_API ?? 'http://localhost:3000';
-const EMAIL = 'owner@local1.test';
-// Dev seed password (database/seeds/dev_local1.sql header).
-const PASSWORD = process.env.PROMO_PASSWORD ?? 'Local1-dev-2026';
+export const WEB = process.env.PROMO_WEB ?? 'https://mostrador-io.onrender.com';
+export const API = process.env.PROMO_API ?? 'https://mobile-project-f5r1.onrender.com';
+export const TENANT = process.env.PROMO_TENANT ?? 'unpilar';
+export const STORE = process.env.PROMO_STORE ?? 'cafeteria';
 
 export const DESKTOP = { width: 1920, height: 1080 };
 export const phone = (viewport, deviceScaleFactor = 3) => ({ ...devices['iPhone 13'], viewport, deviceScaleFactor, isMobile: true, hasTouch: true });
@@ -18,28 +16,26 @@ export const phone = (viewport, deviceScaleFactor = 3) => ({ ...devices['iPhone 
 export const pause = (page, ms = 900) => page.waitForTimeout(ms);
 export const type = (loc, text) => loc.pressSequentially(text, { delay: 60 });
 
-export async function login(page, { submit = true } = {}) {
-  await page.goto(`${WEB}/admin/login`);
-  await type(page.getByLabel('Email'), EMAIL);
-  await pause(page, 500);
-  await type(page.getByLabel('Contraseña'), PASSWORD);
-  await pause(page, 500);
-  if (!submit) return;
-  await page.getByRole('button', { name: 'Ingresar' }).click();
-  await page.getByRole('tab', { name: 'Órdenes' }).waitFor();
-  await pause(page, 1200);
-}
-
+// Las credenciales solo se leen del entorno; nunca se guardan en archivos.
 export async function apiLogin() {
-  const headers = { 'X-Tenant-Slug': 'local1', 'content-type': 'application/json' };
-  const { access_token } = await (await fetch(`${API}/auth/login`, { method: 'POST', headers, body: JSON.stringify({ email: EMAIL, password: PASSWORD }) })).json();
-  const authed = { ...headers, Authorization: `Bearer ${access_token}` };
-  const me = await (await fetch(`${API}/me`, { headers: authed })).json();
-  const screens = await (await fetch(`${API}/screens?store_id=${me.stores[0].store_id}`, { headers: authed })).json();
-  return { jwt: access_token, screenToken: screens[0].token, storeId: me.stores[0].store_id };
+  const { PROMO_EMAIL: email, PROMO_PASSWORD: password } = process.env;
+  if (!email || !password) throw new Error('Definí PROMO_EMAIL y PROMO_PASSWORD en el entorno.');
+  const headers = { 'X-Tenant-Slug': TENANT, 'content-type': 'application/json' };
+  // El primer request puede tardar: Render free duerme el servicio.
+  const res = await fetch(`${API}/auth/login`, { method: 'POST', headers, body: JSON.stringify({ email, password }) });
+  if (!res.ok) throw new Error(`Login falló (${res.status}).`);
+  const { access_token: jwt } = await res.json();
+  const authed = { ...headers, Authorization: `Bearer ${jwt}` };
+  const call = async (path, init = {}) => {
+    const r = await fetch(`${API}${path}`, { ...init, headers: authed });
+    if (!r.ok) throw new Error(`${init.method ?? 'GET'} ${path} -> ${r.status}`);
+    return r.status === 204 ? null : r.json();
+  };
+  const me = await call('/me');
+  return { jwt, storeId: me.stores[0].store_id, call };
 }
 
-// Wait for real content: network quiet, fonts and every <img>/<video> loaded.
+// Espera contenido real: red quieta, fuentes y cada <img>/<video> cargados.
 export async function settle(page) {
   await page.waitForLoadState('networkidle');
   await page.evaluate(() => document.fonts.ready);
@@ -47,22 +43,12 @@ export async function settle(page) {
   await page.waitForTimeout(400);
 }
 
-// Places a real order through the public API so the orders list has a fresh "generada" one.
+// Registra un pedido real por la API pública para que llegue a Órdenes.
 export async function placeOrder(customer_name) {
-  const headers = { 'X-Tenant-Slug': 'local1', 'content-type': 'application/json' };
-  const catalog = await (await fetch(`${API}/public/stores/palermo/catalog`, { headers })).json();
+  const headers = { 'X-Tenant-Slug': TENANT, 'content-type': 'application/json' };
+  const catalog = await (await fetch(`${API}/public/stores/${STORE}/catalog`, { headers })).json();
   const items = catalog.categories.flatMap((c) => c.products).slice(0, 2).map((p) => ({ product_id: p.product_id, quantity: 1 }));
-  await fetch(`${API}/public/stores/palermo/orders`, { method: 'POST', headers, body: JSON.stringify({ items, customer_name }) });
-}
-
-// Re-uploads an image already in the screen content (real food photo) under a readable name.
-export async function promoImage(jwt, storeId) {
-  const headers = { 'X-Tenant-Slug': 'local1', Authorization: `Bearer ${jwt}` };
-  const list = await (await fetch(`${API}/content?store_id=${storeId}`, { headers })).json();
-  const item = list.find((c) => c.type === 'image');
-  if (!item) throw new Error('No image content to reuse; upload one in the app first.');
-  const res = await fetch(item.url.startsWith('http') ? item.url : `${API}${item.url}`, { headers });
-  return { name: 'Promo hamburguesa.png', mimeType: res.headers.get('content-type') ?? 'image/png', buffer: Buffer.from(await res.arrayBuffer()) };
+  await fetch(`${API}/public/stores/${STORE}/orders`, { method: 'POST', headers, body: JSON.stringify({ items, customer_name }) });
 }
 
 // CDP screencast at real device pixels (Playwright's recordVideo is capped at the CSS viewport size, so it looks soft).
@@ -121,22 +107,4 @@ export async function startScreencast(page, { dsf = 1, out } = {}) {
       rmSync(dir, { recursive: true, force: true });
     },
   };
-}
-
-// Creates (through the API, not recorded) a playlist holding the promo image, so scenes that need an
-// existing list start from it. Reuses the "Promo hamburguesa" media if an earlier scene already uploaded it.
-export async function createPromoList({ jwt, storeId }, name) {
-  const headers = { 'X-Tenant-Slug': 'local1', Authorization: `Bearer ${jwt}` };
-  const json = { ...headers, 'content-type': 'application/json' };
-  const library = await (await fetch(`${API}/content`, { headers })).json();
-  let media = library.find((m) => m.original_name.startsWith('Promo hamburguesa'));
-  if (!media) {
-    const { name: fileName, mimeType, buffer } = await promoImage(jwt, storeId);
-    const form = new FormData();
-    form.append('file', new Blob([buffer], { type: mimeType }), fileName);
-    media = await (await fetch(`${API}/content`, { method: 'POST', headers, body: form })).json();
-  }
-  const list = await (await fetch(`${API}/playlists`, { method: 'POST', headers: json, body: JSON.stringify({ name }) })).json();
-  await fetch(`${API}/playlists/${list.playlist_id}/items`, { method: 'PUT', headers: json, body: JSON.stringify({ items: [{ media_id: media.media_id, duration_seconds: 8 }] }) });
-  return list;
 }
