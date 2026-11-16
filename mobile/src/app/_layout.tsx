@@ -13,7 +13,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { CartProvider } from '@/context/CartContext';
 
 SplashScreen.preventAutoHideAsync();
@@ -38,7 +37,6 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <CartProvider>
-        <AnimatedSplashOverlay />
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="[storeSlug]" options={{ headerShown: false }} />
