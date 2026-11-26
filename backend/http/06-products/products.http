@@ -1,0 +1,106 @@
+@baseUrl = http://localhost:3000
+@tenant = local3
+@email = dueno@local3.test
+@password = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+@storeId = {{stores.response.body.$[0].store_id}}
+@categoryId = {{categories.response.body.0.category_id}}
+@productId = {{newProduct.response.body.$.product_id}}
+
+### Login (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Obtener el local (guarda store_id)
+# @name stores
+GET {{baseUrl}}/stores
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Categoria para el producto (guarda category_id)
+# @name categories
+GET {{baseUrl}}/categories?store_id={{storeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Listar productos (filtros opcionales)
+GET {{baseUrl}}/products?store_id={{storeId}}&category_id={{categoryId}}&is_available=true
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Crear producto (guarda product_id)
+# @name newProduct
+POST {{baseUrl}}/products
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "store_id": "{{storeId}}", "category_id": "{{categoryId}}", "name": "Papas fritas", "description": "Porcion grande", "price": "2900.00", "is_available": true, "sort_order": 9 }
+
+### Precio invalido (400)
+POST {{baseUrl}}/products
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "store_id": "{{storeId}}", "category_id": "{{categoryId}}", "name": "Gratis", "price": "0" }
+
+### Detalle del producto
+GET {{baseUrl}}/products/{{productId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Editar producto (ocultarlo del catalogo)
+PATCH {{baseUrl}}/products/{{productId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "price": "3100.00", "is_available": false }
+
+### Volver a mostrarlo (07-public y 08-orders necesitan un producto disponible)
+PATCH {{baseUrl}}/products/{{productId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "is_available": true }
+
+### Subir imagen (PUT multipart, campo file)
+PUT {{baseUrl}}/products/{{productId}}/image
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----mostrador
+
+------mostrador
+Content-Disposition: form-data; name="file"; filename="promo.png"
+Content-Type: image/png
+
+< ../samples/promo.png
+------mostrador--
+
+### Archivo de formato no soportado (415 UNSUPPORTED_MEDIA_TYPE)
+PUT {{baseUrl}}/products/{{productId}}/image
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----mostrador
+
+------mostrador
+Content-Disposition: form-data; name="file"; filename="virus.exe"
+Content-Type: application/octet-stream
+
+esto no es una imagen
+------mostrador--
+
+### Borrar imagen
+DELETE {{baseUrl}}/products/{{productId}}/image
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Borrar producto (204). Saltearlo si despues vas a ejecutar 07-public y 08-orders
+DELETE {{baseUrl}}/products/{{productId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}

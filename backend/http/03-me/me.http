@@ -1,0 +1,26 @@
+@baseUrl = http://localhost:3000
+@tenant = local3
+@email = dueno@local3.test
+@password = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+
+### Login (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Sesion: usuario, tenant, locales y permisos
+GET {{baseUrl}}/me
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Sin token (401)
+GET {{baseUrl}}/me
+X-Tenant-Slug: {{tenant}}
+
+### Tenant inexistente (404 TENANT_NOT_FOUND)
+GET {{baseUrl}}/me
+X-Tenant-Slug: no-existe
+Authorization: Bearer {{token}}

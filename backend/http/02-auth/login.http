@@ -1,0 +1,19 @@
+@baseUrl = http://localhost:3000
+
+### Login de usuario (dueno creado en 01-admin/admin.http)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "dueno@local3.test",
+  "password": "Dueno-dev-2026!"
+}
+
+### Login con credenciales incorrectas (401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "dueno@local3.test",
+  "password": "Incorrecta123!"
+}

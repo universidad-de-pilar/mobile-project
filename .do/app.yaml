@@ -1,0 +1,60 @@
+# DigitalOcean App Platform spec. Placeholders: region, cluster_name, db_name, db_user.
+# SECRET values are not stored here; the console asks for them on first create.
+name: mostrador-backend
+region: nyc
+
+services:
+  - name: api
+    github:
+      repo: universidad-de-pilar/mobile-project
+      branch: main
+      deploy_on_push: true
+    # source_dir is the Docker build context; dockerfile_path is relative to the repo root.
+    source_dir: backend
+    dockerfile_path: backend/Dockerfile
+    http_port: 3000
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    # No health_check.http_path: every route needs a tenant (404 otherwise), so the default TCP check is used.
+    envs:
+      - key: DB_HOST
+        scope: RUN_TIME
+        value: ${db.HOSTNAME}
+      - key: DB_PORT
+        scope: RUN_TIME
+        value: ${db.PORT}
+      - key: DB_USERNAME
+        scope: RUN_TIME
+        value: ${db.USERNAME}
+      - key: DB_PASSWORD
+        scope: RUN_TIME
+        value: ${db.PASSWORD}
+      - key: DB_NAME
+        scope: RUN_TIME
+        value: ${db.DATABASE}
+      - key: DB_CA_CERT
+        scope: RUN_TIME
+        value: ${db.CA_CERT}
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: JWT_EXPIRE_SECONDS
+        scope: RUN_TIME
+        value: "600"
+      - key: BASE_DOMAIN
+        scope: RUN_TIME
+        value: mostrador.io
+      - key: WEB_ORIGIN_TEMPLATE
+        scope: RUN_TIME
+        value: https://{slug}.mostrador.io
+      - key: CLOUDINARY_URL
+        scope: RUN_TIME
+        type: SECRET
+
+databases:
+  - name: db
+    engine: PG
+    production: true
+    cluster_name: mostrador-pg
+    db_name: mobile_project
+    db_user: mostrador

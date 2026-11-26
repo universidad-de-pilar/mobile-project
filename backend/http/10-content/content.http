@@ -1,0 +1,163 @@
+@baseUrl = http://localhost:3000
+@tenant = local3
+@email = dueno@local3.test
+@password = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+@storeId = {{stores.response.body.$[0].store_id}}
+@imageId = {{newImage.response.body.$.content_id}}
+@videoId = {{newVideo.response.body.$.content_id}}
+
+### Login (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Obtener el local (guarda store_id)
+# @name stores
+GET {{baseUrl}}/stores
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Listar contenido (incluye ocultos)
+GET {{baseUrl}}/content?store_id={{storeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Subir imagen con duracion (guarda content_id)
+# @name newImage
+POST {{baseUrl}}/content
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----mostrador
+
+------mostrador
+Content-Disposition: form-data; name="store_id"
+
+{{storeId}}
+------mostrador
+Content-Disposition: form-data; name="duration_seconds"
+
+8
+------mostrador
+Content-Disposition: form-data; name="file"; filename="promo.png"
+Content-Type: image/png
+
+< ../samples/promo.png
+------mostrador--
+
+### Subir video (la duracion la mide el backend)
+# @name newVideo
+POST {{baseUrl}}/content
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----mostrador
+
+------mostrador
+Content-Disposition: form-data; name="store_id"
+
+{{storeId}}
+------mostrador
+Content-Disposition: form-data; name="file"; filename="promo.mp4"
+Content-Type: video/mp4
+
+< ../samples/promo.mp4
+------mostrador--
+
+### Video con duration_seconds (422)
+POST {{baseUrl}}/content
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----mostrador
+
+------mostrador
+Content-Disposition: form-data; name="store_id"
+
+{{storeId}}
+------mostrador
+Content-Disposition: form-data; name="duration_seconds"
+
+10
+------mostrador
+Content-Disposition: form-data; name="file"; filename="promo.mp4"
+Content-Type: video/mp4
+
+< ../samples/promo.mp4
+------mostrador--
+
+### Video de mas de 60 s (422 VIDEO_TOO_LONG)
+POST {{baseUrl}}/content
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----mostrador
+
+------mostrador
+Content-Disposition: form-data; name="store_id"
+
+{{storeId}}
+------mostrador
+Content-Disposition: form-data; name="file"; filename="largo.mp4"
+Content-Type: video/mp4
+
+< ../samples/largo.mp4
+------mostrador--
+
+### Formato no soportado (415 UNSUPPORTED_MEDIA_TYPE)
+POST {{baseUrl}}/content
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----mostrador
+
+------mostrador
+Content-Disposition: form-data; name="store_id"
+
+{{storeId}}
+------mostrador
+Content-Disposition: form-data; name="file"; filename="virus.exe"
+Content-Type: application/octet-stream
+
+esto no es una imagen
+------mostrador--
+
+### Editar imagen: duracion y visibilidad
+PATCH {{baseUrl}}/content/{{imageId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "duration_seconds": 15, "is_visible": true }
+
+### Duracion en un video (422)
+PATCH {{baseUrl}}/content/{{videoId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "duration_seconds": 15 }
+
+### Duracion menor a 3 s (400)
+PATCH {{baseUrl}}/content/{{imageId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "duration_seconds": 1 }
+
+### Reordenar (debe incluir todos los contenidos del local; si hay mas, agregarlos)
+PUT {{baseUrl}}/content/order
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "store_id": "{{storeId}}", "content_ids": ["{{videoId}}", "{{imageId}}"] }
+
+### Borrar la imagen (204)
+DELETE {{baseUrl}}/content/{{imageId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Borrar el video (204)
+DELETE {{baseUrl}}/content/{{videoId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}

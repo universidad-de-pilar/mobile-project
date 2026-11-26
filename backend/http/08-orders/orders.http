@@ -1,0 +1,69 @@
+@baseUrl = http://localhost:3000
+@tenant = local3
+@email = dueno@local3.test
+@password = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+@storeId = {{stores.response.body.$[0].store_id}}
+@productId = {{products.response.body.$[0].product_id}}
+@orderId = {{newOrder.response.body.$.order_id}}
+
+### Login (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Obtener el local (guarda store_id)
+# @name stores
+GET {{baseUrl}}/stores
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Producto disponible para el pedido
+# @name products
+GET {{baseUrl}}/products?store_id={{storeId}}&is_available=true
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Crear pedido como cliente publico (guarda order_id)
+# @name newOrder
+POST {{baseUrl}}/public/stores/centro/orders
+X-Tenant-Slug: {{tenant}}
+Content-Type: application/json
+
+{ "items": [{ "product_id": "{{productId}}", "quantity": 2 }], "customer_name": "Ana", "note": "Sin hielo" }
+
+### Listar ordenes (paginado, filtros opcionales)
+GET {{baseUrl}}/orders?store_id={{storeId}}&status=generada&page=1&limit=20
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Detalle de la orden
+GET {{baseUrl}}/orders/{{orderId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Cambiar estado: generada a en_preparacion
+PATCH {{baseUrl}}/orders/{{orderId}}/status
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "en_preparacion" }
+
+### Salto de estado invalido (409 INVALID_STATUS_TRANSITION)
+PATCH {{baseUrl}}/orders/{{orderId}}/status
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "entregada" }
+
+### Estado desconocido (400)
+PATCH {{baseUrl}}/orders/{{orderId}}/status
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "volando" }

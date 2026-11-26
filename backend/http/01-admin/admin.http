@@ -1,0 +1,134 @@
+@baseUrl = http://localhost:3000
+@adminEmail = admin@mostrador.test
+@adminPassword = Admin-dev-2026!
+@ownerEmail = dueno@local3.test
+@ownerPassword = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+@tenantId = {{created.response.body.$.tenant_id}}
+@ownerToken = {{ownerLogin.response.body.$.access_token}}
+
+# Flujo sin semilla: requiere solo `db:apply`. Ejecutar en orden.
+# El contexto admin se elige con el encabezado X-Tenant-Slug: admin (o el Host admin.localhost).
+
+### 1. Primer registro en admin: queda como root (201). Si ya hay root: 403 ADMIN_ALREADY_EXISTS
+POST {{baseUrl}}/auth/register
+X-Tenant-Slug: admin
+Content-Type: application/json
+
+{ "email": "{{adminEmail}}", "password": "{{adminPassword}}", "first_name": "Admin", "last_name": "Plataforma" }
+
+### 2. Segundo registro en admin con otro email (403 ADMIN_ALREADY_EXISTS)
+POST {{baseUrl}}/auth/register
+X-Tenant-Slug: admin
+Content-Type: application/json
+
+{ "email": "otro@mostrador.test", "password": "{{adminPassword}}", "first_name": "Otro", "last_name": "Usuario" }
+
+### 3. Login del root (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{adminEmail}}", "password": "{{adminPassword}}" }
+
+### 4. Sesion en admin: tenant null, stores [], permisos tenants:*, is_root true
+GET {{baseUrl}}/me
+X-Tenant-Slug: admin
+Authorization: Bearer {{token}}
+
+### 5. Rutas con tenant en admin (404 TENANT_NOT_FOUND)
+GET {{baseUrl}}/stores
+X-Tenant-Slug: admin
+Authorization: Bearer {{token}}
+
+### 6. El dueno se registra primero (sin X-Tenant-Slug admin: usuario comun, sin tenant)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{ "email": "{{ownerEmail}}", "password": "{{ownerPassword}}", "first_name": "Dueno", "last_name": "Local3" }
+
+### 7. Alta de tenant con su primer local y el dueno (201). Slug repetido: 409 SLUG_TAKEN
+# @name created
+POST {{baseUrl}}/tenants
+X-Tenant-Slug: admin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Local Tres",
+  "slug": "local3",
+  "store": { "name": "Centro", "slug": "centro", "address": "Av. Siempre Viva 742" },
+  "owner_email": "{{ownerEmail}}"
+}
+
+### 8. Dueno no registrado (404 USER_NOT_FOUND)
+POST {{baseUrl}}/tenants
+X-Tenant-Slug: admin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Local Cuatro", "slug": "local4", "store": { "name": "Norte", "slug": "norte" }, "owner_email": "nadie@local4.test" }
+
+### 9. Slug reservado (400 INVALID_SLUG)
+POST {{baseUrl}}/tenants
+X-Tenant-Slug: admin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Reservado", "slug": "admin", "store": { "name": "Norte", "slug": "norte" }, "owner_email": "{{ownerEmail}}" }
+
+### 10. Listado de tenants
+GET {{baseUrl}}/tenants
+X-Tenant-Slug: admin
+Authorization: Bearer {{token}}
+
+### 11. Renombrar y suspender (el slug no se edita)
+PATCH {{baseUrl}}/tenants/{{tenantId}}
+X-Tenant-Slug: admin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Local Tres SRL", "is_active": false }
+
+### 12. Tenant suspendido (404 TENANT_NOT_FOUND)
+GET {{baseUrl}}/me
+X-Tenant-Slug: local3
+Authorization: Bearer {{token}}
+
+### 13. Reactivar
+PATCH {{baseUrl}}/tenants/{{tenantId}}
+X-Tenant-Slug: admin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "is_active": true }
+
+### 14. PATCH vacio (400 EMPTY_UPDATE)
+PATCH {{baseUrl}}/tenants/{{tenantId}}
+X-Tenant-Slug: admin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### 15. El root opera cualquier tenant: sesion en local3 (tenant y locales, is_root true)
+GET {{baseUrl}}/me
+X-Tenant-Slug: local3
+Authorization: Bearer {{token}}
+
+### 16. Login del dueno y su sesion en local3
+# @name ownerLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{ownerEmail}}", "password": "{{ownerPassword}}" }
+
+###
+GET {{baseUrl}}/me
+X-Tenant-Slug: local3
+Authorization: Bearer {{ownerToken}}
+
+### 17. El dueno no administra tenants (403 NOT_A_MEMBER en admin)
+GET {{baseUrl}}/tenants
+X-Tenant-Slug: admin
+Authorization: Bearer {{ownerToken}}

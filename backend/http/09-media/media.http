@@ -1,0 +1,50 @@
+@baseUrl = http://localhost:3000
+@tenant = local3
+@email = dueno@local3.test
+@password = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+@storeId = {{stores.response.body.$[0].store_id}}
+@mediaUrl = {{upload.response.body.$.url}}
+@mediaContentId = {{upload.response.body.$.content_id}}
+
+### Login (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Obtener el local (guarda store_id)
+# @name stores
+GET {{baseUrl}}/stores
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Subir una imagen de contenido para obtener una url /media
+# @name upload
+POST {{baseUrl}}/content
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----mostrador
+
+------mostrador
+Content-Disposition: form-data; name="store_id"
+
+{{storeId}}
+------mostrador
+Content-Disposition: form-data; name="file"; filename="promo.png"
+Content-Type: image/png
+
+< ../samples/promo.png
+------mostrador--
+
+### Descargar el archivo (publico, Cache-Control immutable)
+GET {{baseUrl}}{{mediaUrl}}
+
+### Archivo inexistente (404)
+GET {{baseUrl}}/media/no-existe.png
+
+### Limpieza del contenido subido (204)
+DELETE {{baseUrl}}/content/{{mediaContentId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}

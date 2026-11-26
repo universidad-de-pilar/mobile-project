@@ -56,9 +56,9 @@ Join our community of developers creating universal apps.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
 
 
-## EduKit — Ejecución del proyecto
+## Mostrador — Ejecución del proyecto
 
-EduKit es una aplicación académica desarrollada con Expo, React Native y TypeScript para funcionar en Android y web.
+Mostrador es la aplicación de autopedido del cliente, desarrollada con Expo, React Native y TypeScript para funcionar en Android y web.
 
 ### Instalar dependencias
 
@@ -100,4 +100,27 @@ Este comando comprueba la compatibilidad de las dependencias con la configuraci�
 
 ### Pantalla inicial
 
-La pantalla principal presenta EduKit y sus secciones iniciales: catálogo, pedidos y donaciones. Las funcionalidades de cada sección se desarrollarán progresivamente.
+La pantalla principal muestra el catálogo del comercio, desde donde el cliente arma su carrito y confirma el pedido.
+
+### Demo local del autopedido
+
+Todo corre en la máquina local. La web resuelve el comercio por subdominio (`*.localhost` funciona en Chrome y Edge sin configurar nada).
+
+1. Base de datos: PostgreSQL local con una base vacía, y `backend/.env` apuntando a ella (ver `backend/.env.example`).
+2. Esquema y datos de la demo, desde `backend`:
+
+   ```bash
+   npm ci
+   npm run db:apply
+   psql -h localhost -U postgres -d <base> -f ../database/seeds/dev_local1.sql
+   ```
+
+   El seed es idempotente. Crea `local1/palermo` (con WhatsApp ficticio) y `local2/centro` (sin número).
+3. Backend, desde `backend`: `npm run start:dev` (puerto 3000).
+4. Web, desde `mobile`: copiar `.env.example` a `.env` (opcional en web) y ejecutar `npx expo start --web --port 8081`.
+5. Abrir `http://local1.localhost:8081/palermo`. Para el comercio sin número: `http://local2.localhost:8081/centro`.
+
+### Código compartido y builds en CI (RNF-018)
+
+- `npm run shared-code` mide el porcentaje de código compartido entre Android y web (archivos de `src/` sin sufijo `.web`/`.android`/`.ios`/`.native`) y falla si es menor a 90% (umbral configurable: `node scripts/shared-code.js 85` o `SHARED_CODE_MIN`).
+- `.github/workflows/mobile-build.yml` corre tests, la medición, `expo export --platform web` y `expo prebuild` + `gradlew assembleDebug`. Cada build tiene `timeout-minutes: 30` y sube su artefacto (`web-dist`, `android-debug-apk`).

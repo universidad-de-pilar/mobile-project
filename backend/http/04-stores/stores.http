@@ -1,0 +1,45 @@
+@baseUrl = http://localhost:3000
+@tenant = local3
+@email = dueno@local3.test
+@password = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+@storeId = {{stores.response.body.$[0].store_id}}
+
+### Login (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Obtener el local (guarda store_id)
+# @name stores
+GET {{baseUrl}}/stores
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Detalle del local
+GET {{baseUrl}}/stores/{{storeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Actualizar datos del local
+PATCH {{baseUrl}}/stores/{{storeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "address": "Av. Santa Fe 1234", "phone": "+541145550000", "whatsapp_number": "+5491112345678" }
+
+### WhatsApp invalido (400)
+PATCH {{baseUrl}}/stores/{{storeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "whatsapp_number": "1145550000" }
+
+### Local inexistente (404 STORE_NOT_FOUND)
+GET {{baseUrl}}/stores/00000000-0000-4000-8000-000000000000
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}

@@ -1,0 +1,25 @@
+{
+  "name": "promo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scenes": "node capture/scenes.mjs",
+    "prepare-media": "node scripts/prepare-media.mjs",
+    "studio": "npm run prepare-media && remotion studio src/index.ts",
+    "render": "npm run prepare-media && remotion render src/index.ts Presentacion out/mostrador-presentacion.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.540",
+    "@remotion/google-fonts": "^4.0.540",
+    "@remotion/transitions": "^4.0.540",
+    "playwright": "^1.50.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.540"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9.0"
+  }
+}

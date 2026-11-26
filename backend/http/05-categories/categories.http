@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:3000
+@tenant = local3
+@email = dueno@local3.test
+@password = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+@storeId = {{stores.response.body.$[0].store_id}}
+@categoryId = {{newCategory.response.body.$.category_id}}
+
+### Login (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Obtener el local (guarda store_id)
+# @name stores
+GET {{baseUrl}}/stores
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Listar categorias
+GET {{baseUrl}}/categories?store_id={{storeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Crear categoria (guarda category_id)
+# @name newCategory
+POST {{baseUrl}}/categories
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "store_id": "{{storeId}}", "name": "Entradas", "sort_order": 4 }
+
+### Nombre repetido (409 CATEGORY_NAME_TAKEN)
+POST {{baseUrl}}/categories
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "store_id": "{{storeId}}", "name": "entradas" }
+
+### Editar categoria
+PATCH {{baseUrl}}/categories/{{categoryId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Para empezar", "sort_order": 5 }
+
+### Borrar categoria (204)
+DELETE {{baseUrl}}/categories/{{categoryId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}

@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual de usuario de la API de Mostrador en Postman</title>
+</head>
+<body>
+<h1>Manual de usuario de la API de Mostrador en Postman</h1>
+<p><strong>Trabajo práctico</strong></p>
+<table border="1">
+<tr><td>Título</td><td>Manual de usuario de la API de Mostrador en Postman</td></tr>
+<tr><td>Fecha</td><td>2 de noviembre de 2026</td></tr>
+<tr><td>Proyecto</td><td>Mostrador (API HTTP del backend, contrato en <code>docs/api.md</code>)</td></tr>
+<tr><td>Material</td><td>Colección <code>Mostrador.postman_collection.json</code> y entorno <code>Mostrador-local.postman_environment.json</code> (carpeta <code>backend/postman</code>)</td></tr>
+<tr><td>Versión</td><td>1.0</td></tr>
+</table>
+<h2>1. Propósito y alcance</h2>
+<p>Este manual explica cómo importar y ejecutar en Postman la colección de pruebas de la API de Mostrador, un sistema multi-tenant para comercios que ofrece catálogo, autopedido con código QR, órdenes y pantallas de contenido. La colección reproduce, en orden, los 12 archivos <code>.http</code> de <code>backend/http</code> y comprueba automáticamente el código de estado de cada solicitud y algunos campos clave de la respuesta.</p>
+<p>Alcance: la API del backend en un entorno de desarrollo local (<code>http://localhost:3000</code>). Quedan fuera la publicación en un espacio de trabajo en la nube de Postman, las pruebas de carga y la aplicación móvil o web que consume la API.</p>
+<p>Todos los ejemplos de respuesta provienen de una ejecución real de la colección contra el backend local el 2 de noviembre de 2026. Los tokens se muestran abreviados.</p>
+<h2>2. Requisitos previos</h2>
+<ul>
+<li>Postman de escritorio (o Postman CLI 1.x, o Node.js con <code>npx newman</code>).</li>
+<li>PostgreSQL local con una base de datos para el proyecto y el archivo <code>backend/.env</code> apuntando a ella (el modelo está en <code>backend/.env.example</code>).</li>
+<li>Node.js y las dependencias del backend instaladas: <code>npm ci</code> dentro de <code>backend</code>.</li>
+<li><code>ffprobe</code> (FFmpeg) disponible para el backend, porque mide la duración de los videos que se suben en 10 Content.</li>
+<li>El backend en ejecución en el puerto 3000.</li>
+</ul>
+<h3>2.1 Base de datos</h3>
+<p>Desde la carpeta <code>backend</code>:</p>
+<pre><code>npm run db:apply
+# opcional: datos de demostración (local1 y local2), idempotente
+psql -h localhost -U postgres -d &lt;base&gt; -f ../database/seeds/dev_local1.sql</code></pre>
+<p><code>npm run db:apply</code> aplica los scripts SQL de <code>database/scripts</code> (el esquema). La colección no necesita el seed: crea su propio tenant, dueño, local y datos en la carpeta 01 Admin. El seed de <code>mobile/README.md</code> solo es necesario para la demostración de la aplicación.</p>
+<h3>2.2 Backend</h3>
+<pre><code>npm run start:dev</code></pre>
+<p>Comprobación rápida: abrir <code>http://localhost:3000</code> en el navegador; una respuesta 404 en formato JSON indica que el servidor escucha (no existe una ruta raíz).</p>
+<h2>3. Importar la colección y el entorno</h2>
+<ol>
+<li>Abrir Postman y elegir <strong>Import</strong> (esquina superior izquierda).</li>
+<li>Arrastrar los dos archivos de <code>backend/postman</code>: <code>Mostrador.postman_collection.json</code> y <code>Mostrador-local.postman_environment.json</code>. También sirve <strong>Files</strong> y seleccionarlos.</li>
+<li>Confirmar con <strong>Import</strong>. Aparecen la colección «Mostrador API» (con 12 carpetas) y el entorno «Mostrador local».</li>
+<li>En el selector de entorno de la esquina superior derecha, elegir <strong>Mostrador local</strong>.</li>
+</ol>
+<h3>3.1 Directorio de trabajo para los archivos de prueba</h3>
+<p>Las solicitudes que suben archivos (imagen de producto, contenido de pantalla) referencian los archivos de <code>backend/http/samples</code> con rutas relativas a <code>backend/postman</code>, por ejemplo <code>../http/samples/promo.png</code>. Postman necesita saber contra qué carpeta resolverlas:</p>
+<ol>
+<li>Abrir <strong>Settings</strong>, pestaña <strong>General</strong>.</li>
+<li>En <strong>Working directory</strong>, elegir la carpeta <code>backend/postman</code> del repositorio.</li>
+<li>Si Postman marca un archivo como no encontrado en el cuerpo <em>form-data</em> de una solicitud, volver a seleccionarlo con <strong>Select files</strong> desde <code>backend/http/samples</code>.</li>
+</ol>
+<p>Los archivos usados son <code>promo.png</code> (imagen válida), <code>promo.mp4</code> (video corto válido), <code>largo.mp4</code> (video de más de 60 s) y <code>no-soportado.txt</code> (texto, para probar el rechazo por formato).</p>
+<h2>4. Variables</h2>
+<p>La colección encadena valores con variables: los scripts de prueba guardan tokens e identificadores con <code>pm.collectionVariables.set</code> y las solicitudes siguientes los usan. No hace falta editar nada a mano.</p>
+<h3>4.1 Variables del entorno «Mostrador local»</h3>
+<table border="1">
+<tr><th>Nombre</th><th>Valor inicial</th><th>Propósito</th></tr>
+<tr><td><code>baseUrl</code></td><td><code>http://localhost:3000</code></td><td>URL base del backend.</td></tr>
+<tr><td><code>adminTenantSlug</code></td><td><code>admin</code></td><td>Valor del encabezado X-Tenant-Slug para el contexto de administración de la plataforma.</td></tr>
+<tr><td><code>storeSlug</code></td><td><code>centro</code></td><td>Slug del local usado en las rutas públicas (/public/stores/:storeSlug/...). Coincide con el local creado en 01 Admin.</td></tr>
+<tr><td><code>adminEmail</code></td><td><code>admin@mostrador.test</code></td><td>Email del administrador raíz (credencial de desarrollo tomada de backend/http/01-admin/admin.http).</td></tr>
+<tr><td><code>adminPassword</code></td><td><code>Admin-dev-2026!</code></td><td>Contraseña de desarrollo del administrador raíz (la misma fuente).</td></tr>
+<tr><td><code>ownerPassword</code></td><td><code>Dueno-dev-2026!</code></td><td>Contraseña con la que se registra al dueño del tenant de prueba.</td></tr>
+</table>
+<p>No hay secretos reales: son credenciales de desarrollo que ya figuran en los archivos <code>.http</code>. Si el backend tiene un administrador raíz con otras credenciales, hay que reemplazar <code>adminEmail</code> y <code>adminPassword</code> en el entorno.</p>
+<h3>4.2 Variables de la colección (se completan solas)</h3>
+<table border="1">
+<tr><th>Nombre</th><th>Propósito</th><th>Cómo se completa</th></tr>
+<tr><td><code>runId</code></td><td>Sufijo único de la ejecución (8 dígitos).</td><td>Script previo de la colección: últimos 8 dígitos de Date.now(), si está vacío.</td></tr>
+<tr><td><code>tenantSlug</code></td><td>Slug del tenant de prueba (local3-&lt;runId&gt;); va en el encabezado X-Tenant-Slug.</td><td>Script previo de la colección.</td></tr>
+<tr><td><code>ownerEmail</code></td><td>Email del dueño (dueno-&lt;runId&gt;@local3.test).</td><td>Script previo de la colección.</td></tr>
+<tr><td><code>adminToken</code></td><td>JWT del administrador raíz.</td><td>Login del root (01 Admin).</td></tr>
+<tr><td><code>ownerToken</code></td><td>JWT del dueño.</td><td>Login del dueño (01 Admin y primera solicitud de cada carpeta siguiente).</td></tr>
+<tr><td><code>tenantId</code></td><td>Identificador del tenant creado.</td><td>Alta de tenant (01 Admin).</td></tr>
+<tr><td><code>storeId</code></td><td>Identificador del local.</td><td>Obtener el local (GET /stores), en cada carpeta.</td></tr>
+<tr><td><code>newCategoryId</code></td><td>Categoría creada y borrada en 05 Categories.</td><td>Crear categoría (05).</td></tr>
+<tr><td><code>categoryId</code></td><td>Categoría usada por los productos.</td><td>Crear categoría para el producto y listado (06).</td></tr>
+<tr><td><code>productId</code></td><td>Producto que usan 07 Public y 08 Orders.</td><td>Crear producto (06), catálogo (07) y listado (08).</td></tr>
+<tr><td><code>deleteProductId</code></td><td>Producto descartable que se borra en 06.</td><td>Crear producto descartable (06).</td></tr>
+<tr><td><code>orderId</code></td><td>Orden sobre la que se cambia el estado.</td><td>Crear pedido (08).</td></tr>
+<tr><td><code>mediaUrl, mediaPath, mediaContentId</code></td><td>URL /media del archivo subido, la misma sin la barra inicial, e identificador del contenido.</td><td>Subida de contenido (09).</td></tr>
+<tr><td><code>imageId, videoId</code></td><td>Identificadores del contenido de imagen y de video.</td><td>Subidas de 10 Content.</td></tr>
+<tr><td><code>screenId, screenToken</code></td><td>Pantalla y su token.</td><td>Crear pantalla (11) y listado de pantallas (12).</td></tr>
+<tr><td><code>etag</code></td><td>Valor del encabezado ETag de la playlist.</td><td>Playlist (12).</td></tr>
+</table>
+<p>Cada ejecución crea un tenant nuevo con sufijo único, por lo que la colección se puede repetir sin conflictos de email ni de slug. Para ejecutar una sola carpeta (por ejemplo 06 Products) hay que haber ejecutado antes 01 Admin en la misma sesión de Postman, o definir a mano las variables que necesita.</p>
+<h2>5. Autenticación y roles</h2>
+<p>El backend usa tokens JWT. El flujo es:</p>
+<ol>
+<li><code>POST /auth/login</code> con email y contraseña devuelve <code>{ "access_token": "eyJ..." }</code>.</li>
+<li>La colección guarda el token en <code>adminToken</code> o <code>ownerToken</code> y cada solicitud autenticada lo envía como <strong>Authorization: Bearer</strong> (pestaña <strong>Authorization</strong> de la solicitud).</li>
+<li>El token vence a los 10 minutos (el backend fijó 600 segundos en las pruebas). Por eso cada carpeta comienza con su propio login.</li>
+</ol>
+<table border="1">
+<tr><th>Rol</th><th>Quién es</th><th>Variable de token</th><th>Alcance</th></tr>
+<tr><td>root</td><td>Administrador de la plataforma</td><td><code>adminToken</code></td><td>Contexto admin (<code>X-Tenant-Slug: admin</code>): <code>/me</code> y <code>/tenants</code>. También puede operar dentro de cualquier tenant.</td></tr>
+<tr><td>owner</td><td>Dueño de un tenant</td><td><code>ownerToken</code></td><td>Backoffice del tenant: locales, categorías, productos, contenido, pantallas y órdenes. No administra tenants.</td></tr>
+<tr><td>Sin autenticación</td><td>Cliente público y televisor</td><td>(ninguna)</td><td><code>/public/*</code>, <code>/media/*</code> y <code>/player/:token/playlist</code> (el televisor se identifica con el token de la pantalla).</td></tr>
+</table>
+<p>Ejemplo real de login (token abreviado):</p>
+<pre><code>POST /auth/login
+
+
+{
+  "email": "dueno-xxxxxxxx@local3.test",
+  "password": "Dueno-dev-2026!"
+}
+
+200 OK
+
+{
+  "access_token": "eyJ..."
+}</code></pre>
+<h2>6. Encabezado multi-tenant</h2>
+<p>Cada comercio es un <em>tenant</em> identificado por un slug. En producción el slug sale del subdominio (<code>local1.mostrador.io</code>); en desarrollo local las solicitudes van a <code>localhost</code> y el slug se indica con el encabezado <strong>X-Tenant-Slug</strong>:</p>
+<ul>
+<li><code>X-Tenant-Slug: {{tenantSlug}}</code> en las rutas de un tenant (<code>/me</code>, <code>/stores</code>, <code>/products</code>, <code>/public/...</code>, <code>/player/...</code>, etc.).</li>
+<li><code>X-Tenant-Slug: admin</code> para el contexto de administración de la plataforma: allí solo responden <code>/auth/*</code>, <code>/me</code> y <code>/tenants</code>.</li>
+<li>Un slug que no existe, está suspendido o tiene formato inválido responde 404 con <code>code: "TENANT_NOT_FOUND"</code>.</li>
+<li>Las rutas <code>/auth/login</code> y <code>/auth/register</code> no necesitan tenant.</li>
+</ul>
+<p>Además del encabezado, el usuario debe ser miembro activo del tenant (si no, 403 <code>NOT_A_MEMBER</code>), salvo el root.</p>
+<h2>7. Orden de ejecución recomendado</h2>
+<p>La colección está numerada en el orden en que debe correr, de arriba hacia abajo. Las carpetas posteriores dependen de lo que crean las anteriores:</p>
+<ol>
+<li><strong>01 Admin</strong>: crea el tenant, el local y el dueño de la ejecución.</li>
+<li><strong>02 Auth</strong> y <strong>03 Me</strong>: login, registro y sesión.</li>
+<li><strong>04 Stores</strong>, <strong>05 Categories</strong>, <strong>06 Products</strong>: datos del comercio. 06 deja un producto disponible.</li>
+<li><strong>07 Public</strong> y <strong>08 Orders</strong>: usan el producto de 06 para crear y gestionar pedidos.</li>
+<li><strong>09 Media</strong>, <strong>10 Content</strong>, <strong>11 Screens</strong>: contenido y pantallas.</li>
+<li><strong>12 Player</strong>: usa la pantalla creada en 11.</li>
+</ol>
+<h2>8. Carpetas de la colección</h2>
+<p>En cada tabla, «Autenticación» indica la variable de token del encabezado Authorization y «Estado» el código HTTP que verifica la prueba de la solicitud.</p>
+<h3>8.1 01 Admin</h3>
+<p><strong>Propósito.</strong> Flujo de la plataforma sin semilla: registro del administrador raíz, alta de tenant con su primer local y dueño, suspensión y reactivación. Usa el contexto admin (<code>X-Tenant-Slug: admin</code>). Crea un tenant nuevo por ejecución, con sufijo único (<code>runId</code>), por lo que se puede repetir sin conflictos.</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Primer registro en admin: queda como root (201). Si ya hay root: 403 ADMIN_ALREADY_EXISTS</td><td>POST</td><td><code>/auth/register</code></td><td>Ninguna</td><td>201 o 403 o 409</td></tr>
+<tr><td>Segundo registro en admin con otro email (403 ADMIN_ALREADY_EXISTS)</td><td>POST</td><td><code>/auth/register</code></td><td>Ninguna</td><td>403</td></tr>
+<tr><td>Login del root (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Sesión en admin: tenant null, stores [], permisos tenants:*, is_root true</td><td>GET</td><td><code>/me</code></td><td>Bearer {{adminToken}}</td><td>200</td></tr>
+<tr><td>Rutas con tenant en admin (404 TENANT_NOT_FOUND)</td><td>GET</td><td><code>/stores</code></td><td>Bearer {{adminToken}}</td><td>404</td></tr>
+<tr><td>El dueño se registra primero (sin X-Tenant-Slug admin: usuario común, sin tenant)</td><td>POST</td><td><code>/auth/register</code></td><td>Ninguna</td><td>201</td></tr>
+<tr><td>Alta de tenant con su primer local y el dueño (201)</td><td>POST</td><td><code>/tenants</code></td><td>Bearer {{adminToken}}</td><td>201</td></tr>
+<tr><td>Slug repetido (409 SLUG_TAKEN)</td><td>POST</td><td><code>/tenants</code></td><td>Bearer {{adminToken}}</td><td>409</td></tr>
+<tr><td>Dueño no registrado (404 USER_NOT_FOUND)</td><td>POST</td><td><code>/tenants</code></td><td>Bearer {{adminToken}}</td><td>404</td></tr>
+<tr><td>Slug reservado (400 INVALID_SLUG)</td><td>POST</td><td><code>/tenants</code></td><td>Bearer {{adminToken}}</td><td>400</td></tr>
+<tr><td>Listado de tenants</td><td>GET</td><td><code>/tenants</code></td><td>Bearer {{adminToken}}</td><td>200</td></tr>
+<tr><td>Renombrar y suspender (el slug no se edita)</td><td>PATCH</td><td><code>/tenants/{{tenantId}}</code></td><td>Bearer {{adminToken}}</td><td>200</td></tr>
+<tr><td>Tenant suspendido (404 TENANT_NOT_FOUND)</td><td>GET</td><td><code>/me</code></td><td>Bearer {{adminToken}}</td><td>404</td></tr>
+<tr><td>Reactivar</td><td>PATCH</td><td><code>/tenants/{{tenantId}}</code></td><td>Bearer {{adminToken}}</td><td>200</td></tr>
+<tr><td>PATCH vacío (400 EMPTY_UPDATE)</td><td>PATCH</td><td><code>/tenants/{{tenantId}}</code></td><td>Bearer {{adminToken}}</td><td>400</td></tr>
+<tr><td>El root opera cualquier tenant: sesión en el tenant (tenant y locales, is_root true)</td><td>GET</td><td><code>/me</code></td><td>Bearer {{adminToken}}</td><td>200</td></tr>
+<tr><td>Login del dueño (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Sesión del dueño en el tenant</td><td>GET</td><td><code>/me</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>El dueño no administra tenants (403 NOT_A_MEMBER en admin)</td><td>GET</td><td><code>/tenants</code></td><td>Bearer {{ownerToken}}</td><td>403</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Alta de tenant con su primer local y el dueño (201)».</p>
+<p>Solicitud:</p>
+<pre><code>POST /tenants
+X-Tenant-Slug: admin
+Authorization: Bearer eyJ...
+
+{
+  "name": "Local Tres",
+  "slug": "local3-44495731",
+  "store": {
+    "name": "Centro",
+    "slug": "centro",
+    "address": "Av. Siempre Viva 742"
+  },
+  "owner_email": "dueno-44495731@local3.test"
+}</code></pre>
+<p>Respuesta:</p>
+<pre><code>201 Created
+
+{
+  "tenant_id": "78d09b53-ef12-4298-bf51-b726f18e4250",
+  "name": "Local Tres",
+  "slug": "local3-44495731",
+  "is_active": true,
+  "created_at": "2026-11-02T18:35:02.833Z",
+  "web_origin": "http://local3-44495731.localhost:8081",
+  "store": {
+    "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+    "name": "Centro",
+    "slug": "centro",
+    "address": "Av. Siempre Viva 742",
+    "phone": null,
+    "whatsapp_number": null,
+    "is_active": true,
+    "created_at": "2026-11-02T18:35:02.833Z",
+    "self_order_url": "http://local3-44495731.localhost:8081/centro"
+  }
+}</code></pre>
+<p>En una base donde el administrador ya existe, el primer registro responde 409 (el email ya está registrado). Es el resultado esperado de la colección en ejecuciones repetidas.</p>
+<h3>8.2 02 Auth</h3>
+<p><strong>Propósito.</strong> Registro y login de usuarios comunes. El registro crea solo el usuario, sin tenant ni rol. Usa el dueño creado en 01 Admin.</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login de usuario (dueño creado en 01 Admin)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Login con credenciales incorrectas (401)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>401</td></tr>
+<tr><td>Registrar usuario (solo crea el usuario, sin tenant ni rol)</td><td>POST</td><td><code>/auth/register</code></td><td>Ninguna</td><td>201</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Registrar usuario (solo crea el usuario, sin tenant ni rol)».</p>
+<p>Solicitud:</p>
+<pre><code>POST /auth/register
+
+{
+  "email": "test-44495731@test2.com",
+  "password": "Password123!",
+  "first_name": "Juan",
+  "last_name": "Perez"
+}</code></pre>
+<p>Respuesta:</p>
+<pre><code>201 Created
+
+{
+  "user_id": "b3a6e611-c3de-4ba9-8003-ba8869d11ef0",
+  "email": "test-44495731@test2.com",
+  "first_name": "Juan",
+  "last_name": "Perez",
+  "created_at": "2026-11-02T18:35:13.247Z"
+}</code></pre>
+<p>El registro no vincula al usuario con ningún tenant: no puede usar el backoffice hasta que el root lo asocie (ver 01 Admin).</p>
+<h3>8.3 03 Me</h3>
+<p><strong>Propósito.</strong> Sesión del usuario autenticado: usuario, tenant, locales y permisos, y los errores de autenticación y de tenant.</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Sesión: usuario, tenant, locales y permisos</td><td>GET</td><td><code>/me</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Sin token (401)</td><td>GET</td><td><code>/me</code></td><td>Ninguna</td><td>401</td></tr>
+<tr><td>Tenant inexistente (404 TENANT_NOT_FOUND)</td><td>GET</td><td><code>/me</code></td><td>Bearer {{ownerToken}}</td><td>404</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Sesión: usuario, tenant, locales y permisos».</p>
+<p>Solicitud:</p>
+<pre><code>GET /me
+X-Tenant-Slug: local3-44495731
+Authorization: Bearer eyJ...</code></pre>
+<p>Respuesta:</p>
+<pre><code>200 OK
+
+{
+  "user": {
+    "user_id": "788c341c-751a-4c32-a3d7-a5f003a472d8",
+    "email": "dueno-44495731@local3.test",
+    "first_name": "Dueno",
+    "last_name": "Local3"
+  },
+  "tenant": {
+    "tenant_id": "78d09b53-ef12-4298-bf51-b726f18e4250",
+    "name": "Local Tres SRL",
+    "slug": "local3-44495731"
+  },
+  "stores": [
+    {
+      "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+      "name": "Centro",
+      "slug": "centro"
+    }
+  ],
+  "permissions": [
+    "content:read",
+    "categories:delete",
+    "..."
+  ],
+  "is_root": false
+}</code></pre>
+<p>La lista de permisos se acortó en el ejemplo. Los permisos se leen de la base en cada solicitud; el token no los incluye.</p>
+<h3>8.4 04 Stores</h3>
+<p><strong>Propósito.</strong> Consulta y edición del local del tenant (dirección, teléfono y número de WhatsApp en formato internacional).</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Obtener el local (guarda store_id)</td><td>GET</td><td><code>/stores</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Detalle del local</td><td>GET</td><td><code>/stores/{{storeId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Actualizar datos del local</td><td>PATCH</td><td><code>/stores/{{storeId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>WhatsApp inválido (400)</td><td>PATCH</td><td><code>/stores/{{storeId}}</code></td><td>Bearer {{ownerToken}}</td><td>400</td></tr>
+<tr><td>Local inexistente (404 STORE_NOT_FOUND)</td><td>GET</td><td><code>/stores/00000000-0000-4000-8000-000000000000</code></td><td>Bearer {{ownerToken}}</td><td>404</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Actualizar datos del local».</p>
+<p>Solicitud:</p>
+<pre><code>PATCH /stores/29f0e47e-3d25-41ed-b070-892551b1f342
+X-Tenant-Slug: local3-44495731
+Authorization: Bearer eyJ...
+
+{
+  "address": "Av. Santa Fe 1234",
+  "phone": "+541145550000",
+  "whatsapp_number": "+5491112345678"
+}</code></pre>
+<p>Respuesta:</p>
+<pre><code>200 OK
+
+{
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "name": "Centro",
+  "slug": "centro",
+  "address": "Av. Santa Fe 1234",
+  "phone": "+541145550000",
+  "whatsapp_number": "+5491112345678",
+  "is_active": true,
+  "created_at": "2026-11-02T18:35:02.833Z",
+  "self_order_url": "http://local3-44495731.localhost:8081/centro"
+}</code></pre>
+<p>El número de WhatsApp debe tener formato internacional (+ y de 8 a 15 dígitos).</p>
+<h3>8.5 05 Categories</h3>
+<p><strong>Propósito.</strong> Alta, edición y baja de categorías del local. El nombre no se puede repetir dentro del local (sin distinguir mayúsculas).</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Obtener el local (guarda store_id)</td><td>GET</td><td><code>/stores</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Listar categorías</td><td>GET</td><td><code>/categories?store_id={{storeId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Crear categoría (guarda category_id)</td><td>POST</td><td><code>/categories</code></td><td>Bearer {{ownerToken}}</td><td>201</td></tr>
+<tr><td>Nombre repetido (409 CATEGORY_NAME_TAKEN)</td><td>POST</td><td><code>/categories</code></td><td>Bearer {{ownerToken}}</td><td>409</td></tr>
+<tr><td>Editar categoría</td><td>PATCH</td><td><code>/categories/{{newCategoryId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Borrar categoría (204)</td><td>DELETE</td><td><code>/categories/{{newCategoryId}}</code></td><td>Bearer {{ownerToken}}</td><td>204</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Crear categoría (guarda category_id)».</p>
+<p>Solicitud:</p>
+<pre><code>POST /categories
+X-Tenant-Slug: local3-44495731
+Authorization: Bearer eyJ...
+
+{
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "name": "Entradas",
+  "sort_order": 4
+}</code></pre>
+<p>Respuesta:</p>
+<pre><code>201 Created
+
+{
+  "category_id": "cc4c32b4-3081-46f9-9fa2-26e9a090c131",
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "name": "Entradas",
+  "sort_order": 4,
+  "created_at": "2026-11-02T18:35:23.682Z",
+  "updated_at": "2026-11-02T18:35:23.682Z"
+}</code></pre>
+<p>El nombre no puede repetirse en el local, sin distinguir mayúsculas.</p>
+<h3>8.6 06 Products</h3>
+<p><strong>Propósito.</strong> Alta, consulta, edición y baja de productos, y subida y borrado de su imagen (multipart, campo <code>file</code>). Los archivos de prueba se toman de <code>backend/http/samples/</code> con rutas relativas a <code>backend/postman</code>.</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Obtener el local (guarda store_id)</td><td>GET</td><td><code>/stores</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Crear categoría para el producto (agregado)</td><td>POST</td><td><code>/categories</code></td><td>Bearer {{ownerToken}}</td><td>201</td></tr>
+<tr><td>Categoría para el producto (guarda category_id)</td><td>GET</td><td><code>/categories?store_id={{storeId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Listar productos (filtros opcionales)</td><td>GET</td><td><code>/products?store_id={{storeId}}&amp;category_id={{categoryId}}&amp;is_available=true</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Crear producto (guarda product_id)</td><td>POST</td><td><code>/products</code></td><td>Bearer {{ownerToken}}</td><td>201</td></tr>
+<tr><td>Precio inválido (400)</td><td>POST</td><td><code>/products</code></td><td>Bearer {{ownerToken}}</td><td>400</td></tr>
+<tr><td>Detalle del producto</td><td>GET</td><td><code>/products/{{productId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Editar producto (ocultarlo del catálogo)</td><td>PATCH</td><td><code>/products/{{productId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Volver a mostrarlo (07 Public y 08 Orders necesitan un producto disponible)</td><td>PATCH</td><td><code>/products/{{productId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Subir imagen (PUT multipart, campo file)</td><td>PUT</td><td><code>/products/{{productId}}/image</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Archivo de formato no soportado (415 UNSUPPORTED_MEDIA_TYPE)</td><td>PUT</td><td><code>/products/{{productId}}/image</code></td><td>Bearer {{ownerToken}}</td><td>415</td></tr>
+<tr><td>Borrar imagen</td><td>DELETE</td><td><code>/products/{{productId}}/image</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Crear producto descartable (agregado)</td><td>POST</td><td><code>/products</code></td><td>Bearer {{ownerToken}}</td><td>201</td></tr>
+<tr><td>Borrar producto (204)</td><td>DELETE</td><td><code>/products/{{deleteProductId}}</code></td><td>Bearer {{ownerToken}}</td><td>204</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Crear producto (guarda product_id)».</p>
+<p>Solicitud:</p>
+<pre><code>POST /products
+X-Tenant-Slug: local3-44495731
+Authorization: Bearer eyJ...
+
+{
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "category_id": "528192aa-ffe5-438b-8c19-3e340ef6c03d",
+  "name": "Papas fritas",
+  "description": "Porcion grande",
+  "price": "2900.00",
+  "is_available": true,
+  "sort_order": 9
+}</code></pre>
+<p>Respuesta:</p>
+<pre><code>201 Created
+
+{
+  "product_id": "3003d879-e318-4b2b-a7cb-bcafc56988f4",
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "category_id": "528192aa-ffe5-438b-8c19-3e340ef6c03d",
+  "name": "Papas fritas",
+  "description": "Porcion grande",
+  "price": "2900.00",
+  "is_available": true,
+  "sort_order": 9,
+  "created_at": "2026-11-02T18:35:34.015Z",
+  "updated_at": "2026-11-02T18:35:34.015Z",
+  "image_url": null
+}</code></pre>
+<p>El precio viaja como cadena con dos decimales. La subida de imagen usa multipart con el campo file; la ruta del archivo se resuelve desde el directorio de trabajo.</p>
+<h3>8.7 07 Public</h3>
+<p><strong>Propósito.</strong> Catálogo público y creación de pedidos por un cliente anónimo. No lleva <code>Authorization</code>; el tenant se indica con <code>X-Tenant-Slug</code> y el local con el segmento de ruta (<code>storeSlug</code>).</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Catálogo público (solo productos disponibles)</td><td>GET</td><td><code>/public/stores/{{storeSlug}}/catalog</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Crear pedido (los precios los calcula el servidor)</td><td>POST</td><td><code>/public/stores/{{storeSlug}}/orders</code></td><td>Ninguna</td><td>201</td></tr>
+<tr><td>Carrito vacío (400)</td><td>POST</td><td><code>/public/stores/{{storeSlug}}/orders</code></td><td>Ninguna</td><td>400</td></tr>
+<tr><td>Producto inexistente (409 PRODUCTS_UNAVAILABLE)</td><td>POST</td><td><code>/public/stores/{{storeSlug}}/orders</code></td><td>Ninguna</td><td>409</td></tr>
+<tr><td>Local inexistente (404 STORE_NOT_FOUND)</td><td>GET</td><td><code>/public/stores/no-existe/catalog</code></td><td>Ninguna</td><td>404</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Crear pedido (los precios los calcula el servidor)».</p>
+<p>Solicitud:</p>
+<pre><code>POST /public/stores/centro/orders
+X-Tenant-Slug: local3-44495731
+
+{
+  "items": [
+    {
+      "product_id": "3003d879-e318-4b2b-a7cb-bcafc56988f4",
+      "quantity": 2
+    }
+  ],
+  "customer_name": "Ana",
+  "note": "Sin hielo"
+}</code></pre>
+<p>Respuesta:</p>
+<pre><code>201 Created
+
+{
+  "order_id": "cf97de20-0393-4ff0-9513-3726ec342924",
+  "order_number": 1,
+  "status": "generada",
+  "store": {
+    "name": "Centro",
+    "slug": "centro"
+  },
+  "customer_name": "Ana",
+  "note": "Sin hielo",
+  "total": "6200.00",
+  "created_at": "2026-11-02T18:35:46.200Z",
+  "items": [
+    {
+      "line_number": 1,
+      "product_id": "3003d879-e318-4b2b-a7cb-bcafc56988f4",
+      "product_name": "Papas fritas",
+      "unit_price": "3100.00",
+      "quantity": 2,
+      "line_total": "6200.00"
+    }
+  ],
+  "whatsapp_parts": [
+    {
+      "part": 1,
+      "total": 1,
+      "text": "Pedido #1\nLocal: Centro\nCliente: Ana\nNota: Sin hielo\n\n2 x Papas fritas — $6.2...",
+      "url": "(enlace de WhatsApp, abreviado)"
+    }
+  ]
+}</code></pre>
+<p>El servidor calcula los precios y el total; el cuerpo del pedido solo lleva productos y cantidades. El texto de WhatsApp se acortó en el ejemplo.</p>
+<h3>8.8 08 Orders</h3>
+<p><strong>Propósito.</strong> Gestión de órdenes por el dueño: listado paginado, detalle y cambio de estado con sus transiciones válidas.</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Obtener el local (guarda store_id)</td><td>GET</td><td><code>/stores</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Producto disponible para el pedido</td><td>GET</td><td><code>/products?store_id={{storeId}}&amp;is_available=true</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Crear pedido como cliente público (guarda order_id)</td><td>POST</td><td><code>/public/stores/{{storeSlug}}/orders</code></td><td>Ninguna</td><td>201</td></tr>
+<tr><td>Listar órdenes (paginado, filtros opcionales)</td><td>GET</td><td><code>/orders?store_id={{storeId}}&amp;status=generada&amp;page=1&amp;limit=20</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Detalle de la orden</td><td>GET</td><td><code>/orders/{{orderId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Cambiar estado: generada a en_preparacion</td><td>PATCH</td><td><code>/orders/{{orderId}}/status</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Salto de estado inválido (409 INVALID_STATUS_TRANSITION)</td><td>PATCH</td><td><code>/orders/{{orderId}}/status</code></td><td>Bearer {{ownerToken}}</td><td>409</td></tr>
+<tr><td>Estado desconocido (400)</td><td>PATCH</td><td><code>/orders/{{orderId}}/status</code></td><td>Bearer {{ownerToken}}</td><td>400</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Cambiar estado: generada a en_preparacion».</p>
+<p>Solicitud:</p>
+<pre><code>PATCH /orders/444fc79e-5203-4d83-abfb-461ee263ccbc/status
+X-Tenant-Slug: local3-44495731
+Authorization: Bearer eyJ...
+
+{
+  "status": "en_preparacion"
+}</code></pre>
+<p>Respuesta:</p>
+<pre><code>200 OK
+
+{
+  "order_id": "444fc79e-5203-4d83-abfb-461ee263ccbc",
+  "order_number": 2,
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "status": "en_preparacion",
+  "customer_name": "Ana",
+  "note": "Sin hielo",
+  "total": "6200.00",
+  "items_count": 1,
+  "source_screen": null,
+  "created_at": "2026-11-02T18:35:51.789Z",
+  "status_changed_at": "2026-11-02T18:35:56.373Z",
+  "status_changed_by": "788c341c-751a-4c32-a3d7-a5f003a472d8",
+  "items": [
+    {
+      "line_number": 1,
+      "product_id": "3003d879-e318-4b2b-a7cb-bcafc56988f4",
+      "product_name": "Papas fritas",
+      "unit_price": "3100.00",
+      "quantity": 2,
+      "line_total": "6200.00"
+    }
+  ]
+}</code></pre>
+<p>Transiciones válidas: generada a en_preparacion o cancelada; en_preparacion a lista o cancelada; lista a entregada o cancelada.</p>
+<h3>8.9 09 Media</h3>
+<p><strong>Propósito.</strong> Archivos estáticos <code>/media/...</code>: se sube una imagen de contenido para obtener una URL, se descarga sin autenticación y se limpia.</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Obtener el local (guarda store_id)</td><td>GET</td><td><code>/stores</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Subir una imagen de contenido para obtener una url /media</td><td>POST</td><td><code>/content</code></td><td>Bearer {{ownerToken}}</td><td>201</td></tr>
+<tr><td>Descargar el archivo (público, Cache-Control immutable)</td><td>GET</td><td><code>/{{mediaPath}}</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Archivo inexistente (404)</td><td>GET</td><td><code>/media/no-existe.png</code></td><td>Ninguna</td><td>404</td></tr>
+<tr><td>Limpieza del contenido subido (204)</td><td>DELETE</td><td><code>/content/{{mediaContentId}}</code></td><td>Bearer {{ownerToken}}</td><td>204</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Subir una imagen de contenido para obtener una url /media».</p>
+<p>Solicitud:</p>
+<pre><code>POST /content
+X-Tenant-Slug: local3-44495731
+Authorization: Bearer eyJ...
+
+(multipart/form-data) store_id=&lt;uuid&gt;; file=@../http/samples/promo.png</code></pre>
+<p>Respuesta:</p>
+<pre><code>201 Created
+
+{
+  "content_id": "2432c3b0-1434-41ce-afd2-86737ede6a2c",
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "type": "image",
+  "url": "/media/78d09b53-ef12-4298-bf51-b726f18e4250/content/b1a86a9d-41a1-4320-987b-2...",
+  "original_name": "promo.png",
+  "mime_type": "image/png",
+  "size_bytes": 799,
+  "duration_seconds": 10,
+  "sort_order": 1,
+  "is_visible": true,
+  "created_at": "2026-11-02T18:36:00.997Z",
+  "updated_at": "2026-11-02T18:36:00.997Z"
+}</code></pre>
+<p>Esta carpeta sube un archivo de contenido solo para obtener una URL /media, la descarga sin autenticación y la borra.</p>
+<h3>8.10 10 Content</h3>
+<p><strong>Propósito.</strong> Contenido de pantalla (imágenes y videos MP4): alta multipart, edición de duración y visibilidad, reordenamiento y baja. Valida los límites (video de más de 60 s, formato no soportado).</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Obtener el local (guarda store_id)</td><td>GET</td><td><code>/stores</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Listar contenido (incluye ocultos)</td><td>GET</td><td><code>/content?store_id={{storeId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Subir imagen con duración (guarda content_id)</td><td>POST</td><td><code>/content</code></td><td>Bearer {{ownerToken}}</td><td>201</td></tr>
+<tr><td>Subir video (la duración la mide el backend)</td><td>POST</td><td><code>/content</code></td><td>Bearer {{ownerToken}}</td><td>201</td></tr>
+<tr><td>Video con duration_seconds (422)</td><td>POST</td><td><code>/content</code></td><td>Bearer {{ownerToken}}</td><td>422</td></tr>
+<tr><td>Video de más de 60 s (422 VIDEO_TOO_LONG)</td><td>POST</td><td><code>/content</code></td><td>Bearer {{ownerToken}}</td><td>422</td></tr>
+<tr><td>Formato no soportado (415 UNSUPPORTED_MEDIA_TYPE)</td><td>POST</td><td><code>/content</code></td><td>Bearer {{ownerToken}}</td><td>415</td></tr>
+<tr><td>Editar imagen: duración y visibilidad</td><td>PATCH</td><td><code>/content/{{imageId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Duración en un video (422)</td><td>PATCH</td><td><code>/content/{{videoId}}</code></td><td>Bearer {{ownerToken}}</td><td>422</td></tr>
+<tr><td>Duración menor a 3 s (400)</td><td>PATCH</td><td><code>/content/{{imageId}}</code></td><td>Bearer {{ownerToken}}</td><td>400</td></tr>
+<tr><td>Reordenar (debe incluir todos los contenidos del local)</td><td>PUT</td><td><code>/content/order</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Borrar la imagen (204)</td><td>DELETE</td><td><code>/content/{{imageId}}</code></td><td>Bearer {{ownerToken}}</td><td>204</td></tr>
+<tr><td>Borrar el video (204)</td><td>DELETE</td><td><code>/content/{{videoId}}</code></td><td>Bearer {{ownerToken}}</td><td>204</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Subir video (la duración la mide el backend)».</p>
+<p>Solicitud:</p>
+<pre><code>POST /content
+X-Tenant-Slug: local3-44495731
+Authorization: Bearer eyJ...
+
+(multipart/form-data) store_id=&lt;uuid&gt;; file=@../http/samples/promo.mp4</code></pre>
+<p>Respuesta:</p>
+<pre><code>201 Created
+
+{
+  "content_id": "911265d8-90b4-47d0-acd2-b7db014b5e55",
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "type": "video",
+  "url": "/media/78d09b53-ef12-4298-bf51-b726f18e4250/content/5e40c2ff-8f1e-4510-b2fd-6...",
+  "original_name": "promo.mp4",
+  "mime_type": "video/mp4",
+  "size_bytes": 3676,
+  "duration_seconds": 3,
+  "sort_order": 2,
+  "is_visible": true,
+  "created_at": "2026-11-02T18:36:07.352Z",
+  "updated_at": "2026-11-02T18:36:07.352Z"
+}</code></pre>
+<p>La duración de un video (3 s en este ejemplo) la mide el backend con ffprobe; no debe enviarse duration_seconds para videos.</p>
+<h3>8.11 11 Screens</h3>
+<p><strong>Propósito.</strong> Pantallas (televisores) del local: alta con token generado por el servidor, renombrado, desactivación y reactivación. No hay borrado.</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Obtener el local (guarda store_id)</td><td>GET</td><td><code>/stores</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Listar pantallas</td><td>GET</td><td><code>/screens?store_id={{storeId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Crear pantalla (guarda screen_id y token)</td><td>POST</td><td><code>/screens</code></td><td>Bearer {{ownerToken}}</td><td>201</td></tr>
+<tr><td>Renombrar pantalla</td><td>PATCH</td><td><code>/screens/{{screenId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Desactivar pantalla (el reproductor pasa a 404)</td><td>PATCH</td><td><code>/screens/{{screenId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Reactivar pantalla</td><td>PATCH</td><td><code>/screens/{{screenId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Crear pantalla (guarda screen_id y token)».</p>
+<p>Solicitud:</p>
+<pre><code>POST /screens
+X-Tenant-Slug: local3-44495731
+Authorization: Bearer eyJ...
+
+{
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "name": "Entrada"
+}</code></pre>
+<p>Respuesta:</p>
+<pre><code>201 Created
+
+{
+  "screen_id": "5332d458-f247-427e-b66f-75170b0cf86c",
+  "store_id": "29f0e47e-3d25-41ed-b070-892551b1f342",
+  "name": "Entrada",
+  "token": "n3Jv...",
+  "is_active": true,
+  "created_at": "2026-11-02T18:36:21.160Z",
+  "updated_at": "2026-11-02T18:36:21.160Z",
+  "player_url": "http://local3-44495731.localhost:8081/screen/n3Jv..."
+}</code></pre>
+<p>El token de la pantalla se muestra abreviado. Quien conozca el token puede ver la playlist, por lo que debe tratarse como una credencial.</p>
+<h3>8.12 12 Player</h3>
+<p><strong>Propósito.</strong> Reproductor de pantalla: playlist pública identificada por el token de la pantalla, con detección de cambios por <code>ETag</code> (304 cuando no cambió).</p>
+<table border="1">
+<tr><th>Solicitud</th><th>Método</th><th>Ruta</th><th>Autenticación</th><th>Estado esperado</th></tr>
+<tr><td>Login (guarda el token)</td><td>POST</td><td><code>/auth/login</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Obtener el local (guarda store_id)</td><td>GET</td><td><code>/stores</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Token de una pantalla existente</td><td>GET</td><td><code>/screens?store_id={{storeId}}</code></td><td>Bearer {{ownerToken}}</td><td>200</td></tr>
+<tr><td>Playlist (público; anota el ETag de la respuesta)</td><td>GET</td><td><code>/player/{{screenToken}}/playlist</code></td><td>Ninguna</td><td>200</td></tr>
+<tr><td>Misma playlist con If-None-Match (304 sin cuerpo)</td><td>GET</td><td><code>/player/{{screenToken}}/playlist</code></td><td>Ninguna</td><td>304</td></tr>
+<tr><td>Token inexistente (404 SCREEN_NOT_FOUND)</td><td>GET</td><td><code>/player/token-que-no-existe/playlist</code></td><td>Ninguna</td><td>404</td></tr>
+</table>
+<p><strong>Ejemplo real:</strong> «Playlist (público; anota el ETag de la respuesta)».</p>
+<p>Solicitud:</p>
+<pre><code>GET /player/n3Jv.../playlist
+X-Tenant-Slug: local3-44495731</code></pre>
+<p>Respuesta:</p>
+<pre><code>200 OK
+ETag: "c36c5d86ecc6fdb2"
+
+{
+  "version": "c36c5d86ecc6fdb2",
+  "poll_interval_seconds": 30,
+  "store": {
+    "name": "Centro",
+    "slug": "centro"
+  },
+  "qr_url": "http://local3-44495731.localhost:8081/centro?src=5332d458-f247-427e-b66f-7517...",
+  "items": []
+}</code></pre>
+<p>La respuesta de la playlist trae el ETag; al reenviarlo en If-None-Match el backend responde 304 sin cuerpo. En este tenant no hay contenido visible, por eso items está vacío.</p>
+<h2>9. Ejecutar toda la colección</h2>
+<h3>9.1 Con el Collection Runner de Postman</h3>
+<ol>
+<li>En la barra lateral, pasar el cursor sobre la colección «Mostrador API» y elegir <strong>Run</strong> (o menú de tres puntos y <strong>Run collection</strong>).</li>
+<li>Confirmar que el entorno seleccionado es «Mostrador local», con 1 iteración y sin retardo.</li>
+<li>Dejar todas las solicitudes marcadas y respetar el orden (no reordenar).</li>
+<li>Pulsar <strong>Run Mostrador API</strong>. Al terminar, Postman muestra el resumen con solicitudes, pruebas aprobadas y fallidas.</li>
+</ol>
+<p>La ejecución completa tarda alrededor de 90 segundos.</p>
+<h3>9.2 Con la línea de comandos</h3>
+<p>Desde la carpeta <code>backend/postman</code>, con Postman CLI:</p>
+<pre><code>postman collection run Mostrador.postman_collection.json -e Mostrador-local.postman_environment.json</code></pre>
+<p>O con Newman (no requiere cuenta de Postman); <code>--working-dir</code> indica la carpeta contra la que se resuelven las rutas de los archivos de prueba:</p>
+<pre><code>npx -y newman@6 run Mostrador.postman_collection.json -e Mostrador-local.postman_environment.json --working-dir . --reporters cli,json --reporter-json-export postman-run.json</code></pre>
+<p>Postman CLI muestra la advertencia «No authorization data found» si no se inició sesión con <code>postman login</code>; la ejecución local funciona igual y solo se omite el envío del informe a la nube.</p>
+<h2>10. Cómo leer los resultados</h2>
+<ul>
+<li>Cada solicitud tiene una pestaña <strong>Test Results</strong>. Una prueba aprobada aparece como <strong>PASS</strong> y una fallida como <strong>FAIL</strong>, con el mensaje de la aserción (por ejemplo «expected response to have status code 200 but got 404»).</li>
+<li>Todas las solicitudes verifican el código de estado («Responde 201», «Responde 404», etc.) y algunas verifican además campos de la respuesta («code SLUG_TAKEN», «Pedido generado»).</li>
+<li>Las solicitudes de casos negativos (401, 403, 404, 409, 415, 422) se consideran aprobadas cuando el backend responde precisamente ese error.</li>
+<li>En el resumen del Runner o de la consola, <em>requests</em> cuenta solicitudes ejecutadas y <em>assertions</em> las pruebas <code>pm.test</code>. El resultado esperado es cero fallidas.</li>
+<li>La pestaña <strong>Console</strong> de Postman (<strong>View</strong>, <strong>Show Postman Console</strong>) muestra la solicitud y la respuesta crudas, útil para depurar.</li>
+</ul>
+<h2>11. Resultado de la ejecución real</h2>
+<p>Ejecución con Newman 6 contra el backend local (<code>http://localhost:3000</code>, base de datos de desarrollo) el 2 de noviembre de 2026. Se ejecutó dos veces seguidas para comprobar que la colección es repetible.</p>
+<table border="1">
+<tr><th>Ejecución</th><th>Solicitudes</th><th>Pruebas aprobadas</th><th>Pruebas fallidas</th><th>Duración</th><th>Fecha</th></tr>
+<tr><td>Primera</td><td>101</td><td>183</td><td>0</td><td>91,9 s</td><td>2 de noviembre de 2026</td></tr>
+<tr><td>Segunda (repetibilidad)</td><td>101</td><td>183</td><td>0</td><td>91,3 s</td><td>2 de noviembre de 2026</td></tr>
+</table>
+<p>Una tercera ejecución con Postman CLI 1.75 dio el mismo resultado: 101 solicitudes, 183 pruebas, 0 fallidas.</p>
+<table border="1">
+<tr><th>Carpeta</th><th>Solicitudes</th></tr>
+<tr><td>01 Admin</td><td>19</td></tr>
+<tr><td>02 Auth</td><td>3</td></tr>
+<tr><td>03 Me</td><td>4</td></tr>
+<tr><td>04 Stores</td><td>6</td></tr>
+<tr><td>05 Categories</td><td>7</td></tr>
+<tr><td>06 Products</td><td>15</td></tr>
+<tr><td>07 Public</td><td>5</td></tr>
+<tr><td>08 Orders</td><td>9</td></tr>
+<tr><td>09 Media</td><td>6</td></tr>
+<tr><td>10 Content</td><td>14</td></tr>
+<tr><td>11 Screens</td><td>7</td></tr>
+<tr><td>12 Player</td><td>6</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>101</strong></td></tr>
+</table>
+<p>Diferencias respecto de los archivos <code>.http</code>: se agregaron tres solicitudes de apoyo para que la colección corra de punta a punta (categoría para el producto y producto descartable en 06 Products, y «Slug repetido» en 01 Admin); el producto que se borra en 06 es el descartable y no el usado por 07 y 08; y los archivos <code>virus.exe</code> en línea se reemplazaron por <code>no-soportado.txt</code>.</p>
+<h2>12. Errores comunes y soluciones</h2>
+<table border="1">
+<tr><th>Síntoma</th><th>Causa</th><th>Solución</th></tr>
+<tr><td>401 Unauthorized</td><td>El token falta o venció (dura 10 minutos). Ejemplo: <code>{"message":"Unauthorized","statusCode":401}</code>.</td><td>Ejecutar de nuevo el login de la carpeta (o toda la colección desde el principio). Verificar que la solicitud tenga Authorization con la variable de token.</td></tr>
+<tr><td>403 Forbidden</td><td>El usuario no tiene el permiso o no es miembro del tenant. Ejemplo: <code>code: "NOT_A_MEMBER"</code> cuando el dueño llama a <code>/tenants</code> en el contexto admin.</td><td>Usar el token del rol correcto (<code>adminToken</code> para <code>/tenants</code>) y el slug del tenant al que pertenece el usuario.</td></tr>
+<tr><td>404 TENANT_NOT_FOUND</td><td>El encabezado <code>X-Tenant-Slug</code> no corresponde a un tenant activo, o se pidió una ruta de tenant en el contexto admin.</td><td>Revisar <code>tenantSlug</code> (se genera en cada ejecución) y que el tenant esté activo. Si se ejecuta una carpeta suelta, correr antes 01 Admin.</td></tr>
+<tr><td>404 de otros recursos</td><td>El identificador no existe o es de otro tenant; el token de la pantalla es inexistente o la pantalla está desactivada.</td><td>Verificar que las variables (<code>storeId</code>, <code>productId</code>, <code>orderId</code>, <code>screenToken</code>) no estén vacías; correr las carpetas anteriores.</td></tr>
+<tr><td>409 Conflict</td><td>Duplicado o estado inválido: email ya registrado, <code>SLUG_TAKEN</code>, <code>CATEGORY_NAME_TAKEN</code>, <code>PRODUCTS_UNAVAILABLE</code>, <code>INVALID_STATUS_TRANSITION</code>.</td><td>Los 409 de la colección son casos negativos esperados. Si aparece uno inesperado (por ejemplo al registrar al dueño), limpiar las variables <code>runId</code>, <code>tenantSlug</code> y <code>ownerEmail</code> de la colección para generar valores nuevos.</td></tr>
+<tr><td>415 / 422 en subidas</td><td>Formato no soportado, video de más de 60 s, o duración enviada en un video.</td><td>Usar los archivos de <code>backend/http/samples</code>. Son los códigos esperados en los casos negativos.</td></tr>
+<tr><td>Upload path not found (archivo de prueba no encontrado)</td><td>Postman o Newman no encuentran <code>../http/samples/promo.png</code> porque el directorio de trabajo es otro.</td><td>En Postman: Settings, General, Working directory = <code>backend/postman</code>, o volver a seleccionar el archivo en la solicitud. En Newman: agregar <code>--working-dir</code> con esa carpeta.</td></tr>
+<tr><td>Backend caído (Could not get any response / ECONNREFUSED)</td><td>El servidor no está levantado o escucha en otro puerto.</td><td>Iniciar el backend con <code>npm run start:dev</code> en <code>backend</code> y comprobar que <code>baseUrl</code> del entorno sea <code>http://localhost:3000</code>.</td></tr>
+<tr><td>Login del root falla (401) en 01 Admin</td><td>La base ya tiene un administrador raíz con otro email o contraseña.</td><td>Reemplazar <code>adminEmail</code> y <code>adminPassword</code> del entorno por las credenciales del root existente.</td></tr>
+<tr><td>Entorno sin seleccionar</td><td>Las solicitudes quedan con <code>{{baseUrl}}</code> sin resolver.</td><td>Elegir «Mostrador local» en el selector de entorno.</td></tr>
+</table>
+<p>Ejemplos reales de errores devueltos por el backend:</p>
+<pre><code>Sin token (401)
+401 Unauthorized
+
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+
+Tenant inexistente (404 TENANT_NOT_FOUND)
+404 Not Found
+
+{
+  "statusCode": 404,
+  "message": "Tenant not found",
+  "error": "Not Found",
+  "code": "TENANT_NOT_FOUND"
+}
+
+El dueño no administra tenants (403 NOT_A_MEMBER en admin)
+403 Forbidden
+
+{
+  "statusCode": 403,
+  "message": "Not an active member of this tenant",
+  "error": "Forbidden",
+  "code": "NOT_A_MEMBER"
+}
+
+Nombre repetido (409 CATEGORY_NAME_TAKEN)
+409 Conflict
+
+{
+  "statusCode": 409,
+  "message": "Category name already exists in this store",
+  "error": "Conflict",
+  "code": "CATEGORY_NAME_TAKEN"
+}
+
+Archivo de formato no soportado (415 UNSUPPORTED_MEDIA_TYPE)
+415 Unsupported Media Type
+
+{
+  "statusCode": 415,
+  "message": "Only JPG, PNG or WebP images are allowed",
+  "error": "Unsupported Media Type",
+  "code": "UNSUPPORTED_MEDIA_TYPE"
+}</code></pre>
+<h2>13. Glosario</h2>
+<table border="1">
+<tr><th>Término</th><th>Significado</th></tr>
+<tr><td>API</td><td>Interfaz por la que otros programas usan el backend mediante solicitudes HTTP.</td></tr>
+<tr><td>Colección (Postman)</td><td>Conjunto ordenado de solicitudes, con sus pruebas, que se puede importar y ejecutar.</td></tr>
+<tr><td>Entorno (Postman)</td><td>Conjunto de variables (por ejemplo la URL base) que se elige antes de ejecutar.</td></tr>
+<tr><td>Variable de colección</td><td>Valor guardado durante la ejecución (tokens, identificadores) que usan las solicitudes siguientes.</td></tr>
+<tr><td>Collection Runner</td><td>Herramienta de Postman que ejecuta toda la colección en orden y resume los resultados.</td></tr>
+<tr><td>Newman / Postman CLI</td><td>Ejecutores de colecciones por línea de comandos.</td></tr>
+<tr><td>JWT / Bearer</td><td>Token firmado que se obtiene al iniciar sesión y se envía en el encabezado Authorization como «Bearer &lt;token&gt;».</td></tr>
+<tr><td>Tenant</td><td>Comercio o cliente de la plataforma; sus datos están aislados de los de otros tenants.</td></tr>
+<tr><td>Slug</td><td>Identificador corto y legible de un tenant o de un local, usado en URL y encabezados.</td></tr>
+<tr><td>root</td><td>Rol de administrador de la plataforma, que crea tenants.</td></tr>
+<tr><td>owner</td><td>Rol del dueño de un tenant.</td></tr>
+<tr><td>Backoffice</td><td>Conjunto de rutas autenticadas con las que el comercio gestiona su local.</td></tr>
+<tr><td>Autopedido</td><td>Pedido que el cliente arma escaneando un código QR, sin autenticarse (rutas /public).</td></tr>
+<tr><td>Reproductor / playlist</td><td>Programa del televisor y lista de contenidos que muestra; se identifica con el token de la pantalla.</td></tr>
+<tr><td>ETag / If-None-Match</td><td>Mecanismo para saber si la playlist cambió: si el valor coincide, el backend responde 304 sin cuerpo.</td></tr>
+<tr><td>Multipart / form-data</td><td>Formato de solicitud HTTP para subir archivos.</td></tr>
+<tr><td>Estado HTTP</td><td>Código numérico de la respuesta (200 correcto, 401 sin autenticar, 403 sin permiso, 404 no encontrado, 409 conflicto, 422 no procesable).</td></tr>
+<tr><td>Seed</td><td>Datos de demostración que se cargan en la base de desarrollo.</td></tr>
+</table>
+</body>
+</html>

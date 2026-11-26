@@ -1,0 +1,59 @@
+@baseUrl = http://localhost:3000
+@tenant = local3
+@email = dueno@local3.test
+@password = Dueno-dev-2026!
+@token = {{login.response.body.$.access_token}}
+@storeId = {{stores.response.body.$[0].store_id}}
+@screenId = {{newScreen.response.body.$.screen_id}}
+@screenToken = {{newScreen.response.body.$.token}}
+
+### Login (guarda el token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Obtener el local (guarda store_id)
+# @name stores
+GET {{baseUrl}}/stores
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Listar pantallas
+GET {{baseUrl}}/screens?store_id={{storeId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+
+### Crear pantalla (guarda screen_id y token)
+# @name newScreen
+POST {{baseUrl}}/screens
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "store_id": "{{storeId}}", "name": "Entrada" }
+
+### Renombrar pantalla
+PATCH {{baseUrl}}/screens/{{screenId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Entrada principal" }
+
+### Desactivar pantalla (el reproductor pasa a 404)
+PATCH {{baseUrl}}/screens/{{screenId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "is_active": false }
+
+### Reactivar pantalla
+PATCH {{baseUrl}}/screens/{{screenId}}
+X-Tenant-Slug: {{tenant}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "is_active": true }
